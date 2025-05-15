@@ -1,0 +1,17 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Wagon {
+  id        Int      @id @default(autoincrement())
+  number    String
+  cargo     String
+  warehouse String
+  track     String
+  arrivalAt DateTime @default(now())
+}
