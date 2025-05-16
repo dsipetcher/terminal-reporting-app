@@ -6,12 +6,22 @@ interface Wagon {
   cargo: string
   warehouse: string
   track: string
-  arrivalAt: string
+  arrivalAt: Date | string | null
 }
 
 export default function App() {
   const [wagons, setWagons] = useState<Wagon[]>([])
   const [form, setForm] = useState({ number: '', cargo: '', warehouse: '', track: '' })
+  const [arrivalTime, setArrivalTime] = useState<Date | null>(null)
+
+  const formatDateTimeLocal = (date: Date | null) => {
+    if (!date) return ''
+    return date.toISOString().slice(0, 16) // format for input[type="datetime-local"]
+  }
+
+  const parseDateTimeLocal = (value: string): Date | null => {
+    return value ? new Date(value) : null
+  }
 
   useEffect(() => {
     fetch('http://localhost:3001/api/wagons')
@@ -25,16 +35,26 @@ export default function App() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!arrivalTime) {
+      alert('Пожалуйста, укажите дату и время прибытия')
+      return
+    }
+
     const res = await fetch('http://localhost:3001/api/wagons', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
+      body: JSON.stringify({
+        ...form,
+        arrivalAt: arrivalTime.toISOString(),
+      }),
     })
 
     if (res.ok) {
       const newWagon = await res.json()
       setWagons([newWagon, ...wagons])
       setForm({ number: '', cargo: '', warehouse: '', track: '' })
+      setArrivalTime(null)
     } else {
       alert('Ошибка при добавлении вагона')
     }
@@ -49,6 +69,14 @@ export default function App() {
         <input name="cargo" value={form.cargo} onChange={handleChange} placeholder="Груз" required />
         <input name="warehouse" value={form.warehouse} onChange={handleChange} placeholder="Склад" required />
         <input name="track" value={form.track} onChange={handleChange} placeholder="Путь" required />
+
+        <input
+          type="datetime-local"
+          value={formatDateTimeLocal(arrivalTime)}
+          onChange={(e) => setArrivalTime(parseDateTimeLocal(e.target.value))}
+          required
+        />
+
         <button type="submit">Добавить</button>
       </form>
 
@@ -71,7 +99,7 @@ export default function App() {
               <td>{w.cargo}</td>
               <td>{w.warehouse}</td>
               <td>{w.track}</td>
-              <td>{new Date(w.arrivalAt).toLocaleString()}</td>
+              <td>{w.arrivalAt ? new Date(w.arrivalAt).toLocaleString() : '-'}</td>
             </tr>
           ))}
         </tbody>
