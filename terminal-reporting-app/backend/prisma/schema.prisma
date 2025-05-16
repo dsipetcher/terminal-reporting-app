@@ -13,5 +13,5 @@ model Wagon {
   cargo     String
   warehouse String
   track     String
-  arrivalAt DateTime @default(now())
+  arrivalAt DateTime
 }

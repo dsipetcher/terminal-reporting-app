@@ -16,9 +16,9 @@ app.get('/wagons', async (req, res) => {
 
 // Add new wagon
 app.post('/wagons', async (req, res) => {
-  const { number, cargo, warehouse, track } = req.body
+  const { number, cargo, warehouse, track, arrivalAt } = req.body
   const wagon = await prisma.wagon.create({
-    data: { number, cargo, warehouse, track },
+    data: { number, cargo, warehouse, track, arrivalAt },
   })
   res.json(wagon)
 })

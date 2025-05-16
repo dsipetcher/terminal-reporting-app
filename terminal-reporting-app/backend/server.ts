@@ -15,17 +15,27 @@ app.get('/api/wagons', async (req, res) => {
 })
 
 // Добавить вагон
-app.post('/api/wagons', async (req, res):Promise<void> => {
-  const { number, cargo, warehouse, track } = req.body
-  if (!number || !cargo || !warehouse || !track) {
-    res.status(400).json({ error: 'Missing fields' })
-  }
+app.post('/api/wagons', async (req, res) => {
+  try {
+    const { number, track, warehouse, cargo, arrivalAt } = req.body;
 
-  const wagon = await prisma.wagon.create({
-    data: { number, cargo, warehouse, track }
-  })
-  res.status(201).json(wagon)
-})
+    const wagon = await prisma.wagon.create({
+      data: {
+        number,
+        track,
+        warehouse,
+        cargo,
+        arrivalAt: new Date(arrivalAt),
+      },
+    });
+
+    res.status(201).json(wagon);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Не удалось создать вагон' });
+  }
+});
+
 
 app.listen(3001, () => {
   console.log('✅ Backend running at http://localhost:3001')

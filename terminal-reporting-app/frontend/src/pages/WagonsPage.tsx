@@ -7,7 +7,7 @@ type Wagon = {
   cargo: string
   warehouse: string
   track: string
-  arrivalAt: string
+  arrivalAt: Date | null
 }
 
 export default function WagonsPage() {
@@ -39,7 +39,7 @@ export default function WagonsPage() {
               <td>{wagon.cargo}</td>
               <td>{wagon.warehouse}</td>
               <td>{wagon.track}</td>
-              <td>{new Date(wagon.arrivalAt).toLocaleString()}</td>
+              <td>{wagon.arrivalAt ? new Date(wagon.arrivalAt).toLocaleString() : '-'}</td>
             </tr>
           ))}
         </tbody>
