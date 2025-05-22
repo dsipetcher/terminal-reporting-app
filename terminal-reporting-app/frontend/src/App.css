@@ -4,6 +4,45 @@
   padding: 2rem;
   text-align: center;
 }
+/* App.css */
+.app-container {
+  display: flex;
+  transition: transform 0.3s ease;
+  position: relative;
+}
+
+/* Sidebar settings */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  background-color: #333;
+  color: white;
+  padding: 1rem;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  margin-left: 0;
+  padding: 2rem;
+  transition: margin-left 0.3s ease;
+}
+
+/* When sidebar is open */
+.sidebar-open .sidebar {
+  transform: translateX(0);
+  background-color: #131313; /* темнее, для лучшего контраста */
+}
+
+.sidebar-open .main-content {
+  margin-left: 240px;
+}
 
 .logo {
   height: 6em;
@@ -39,4 +78,48 @@
 
 .read-the-docs {
   color: #888;
+}
+.menu-button {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1100;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.menu-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Гамбургер иконка */
+.menu-icon {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background-color: white;
+  position: relative;
+}
+
+.menu-icon::before,
+.menu-icon::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 2px;
+  background-color: white;
+  left: 0;
+  transition: transform 0.2s;
+}
+
+.menu-icon::before {
+  top: -8px;
+}
+
+.menu-icon::after {
+  top: 8px;
 }

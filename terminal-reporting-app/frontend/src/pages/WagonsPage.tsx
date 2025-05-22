@@ -5,6 +5,7 @@ type Wagon = {
   id: number
   number: string
   cargo: string
+  cargoWeight?: number | null
   warehouse: string
   track: string
   arrivalAt: Date | null
