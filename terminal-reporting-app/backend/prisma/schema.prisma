@@ -7,11 +7,25 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Wagon {
-  id        Int      @id @default(autoincrement())
-  number    String
-  cargo     String
-  warehouse String
-  track     String
-  arrivalAt DateTime
+model Warehouse {
+  id          Int     @id @default(autoincrement())
+  number      String  @unique            // Номер склада
+  capacity    Float                     // Максимальный объем склада
+  wagons      Wagon[]                   // Связь с вагонами
+
+  /// Поле не сохраняется в базе, а рассчитывается вручную при необходимости
+  // currentLoad Float?   // если хочешь хранить заполненность, но лучше рассчитывать
 }
+
+model Wagon {
+  id          Int       @id @default(autoincrement())
+  number      String
+  cargo       String
+  cargoWeight Float?
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  warehouseId Int
+  track       String
+  arrivalAt   DateTime
+}
+
+
