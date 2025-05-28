@@ -8,7 +8,7 @@ interface Wagon {
   number: string
   cargo: string
   cargoWeight: number
-  warehouse: string
+  warehouseId: string
   track: string
   arrivalAt: Date | string | null
 }
@@ -19,7 +19,7 @@ export default function App() {
     number: '',
     cargo: '',
     cargoWeight: '',
-    warehouse: '',
+    warehouseId: '',
     track: ''
   });
   const [arrivalTime, setArrivalTime] = useState<Date | null>(null)
@@ -56,8 +56,11 @@ export default function App() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        ...form,
+        number: form.number,
+        cargo: form.cargo,
         cargoWeight: parseFloat(form.cargoWeight),
+        track: form.track,
+        warehouseId: parseInt(form.warehouseId), // преобразование в число
         arrivalAt: arrivalTime.toISOString(),
       })
     })
@@ -69,7 +72,7 @@ export default function App() {
         number: '',
         cargo: '',
         cargoWeight: '',
-        warehouse: '',
+        warehouseId: '',
         track: ''
       })
       setArrivalTime(null)
@@ -84,7 +87,7 @@ export default function App() {
         <aside className="sidebar">
           <h2>Меню</h2>
           <ul>
-            <li><Link to="/">Статистика</Link></li>
+            <li><Link to="/wagons">Вагоны</Link></li>
             <li><Link to="/warehouses">Склады</Link></li>
             <li>Настройки</li>
           </ul>
@@ -97,7 +100,7 @@ export default function App() {
 
           <Routes>
             <Route
-              path="/"
+              path="/wagons"
               element={
                 <>
                   <h1>Учет вагонов</h1>
@@ -105,7 +108,7 @@ export default function App() {
                     <input name="number" value={form.number} onChange={handleChange} placeholder="Номер" required />
                     <input name="cargo" value={form.cargo} onChange={handleChange} placeholder="Груз" required />
                     <input name="cargoWeight" type="number" value={form.cargoWeight} onChange={handleChange} placeholder="Масса груза (т)" required />
-                    <input name="warehouse" value={form.warehouse} onChange={handleChange} placeholder="Склад" required />
+                    <input name="warehouseId" value={form.warehouseId} onChange={handleChange} placeholder="ID склада" required />
                     <input name="track" value={form.track} onChange={handleChange} placeholder="Путь" required />
                     <input
                       type="datetime-local"
@@ -135,7 +138,7 @@ export default function App() {
                           <td>{w.number}</td>
                           <td>{w.cargo}</td>
                           <td>{w.cargoWeight}</td>
-                          <td>{w.warehouse}</td>
+                          <td>{w.warehouseId}</td>
                           <td>{w.track}</td>
                           <td>{w.arrivalAt ? new Date(w.arrivalAt).toLocaleString() : '-'}</td>
                         </tr>
