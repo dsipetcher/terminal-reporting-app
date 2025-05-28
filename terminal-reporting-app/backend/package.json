@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.18",
-    "@types/express": "^5.0.1",
+    "@types/express": "^5.0.2",
     "@types/node": "^22.15.18",
     "prisma": "^6.8.1",
     "ts-node": "^10.9.2",
