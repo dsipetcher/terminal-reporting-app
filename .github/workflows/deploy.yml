@@ -26,24 +26,24 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: terminal-reporting-app/frontend/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./frontend
+        working-directory: ./terminal-reporting-app/frontend
         run: npm ci
 
       - name: Build
-        working-directory: ./frontend
+        working-directory: ./terminal-reporting-app/frontend
         run: npm run build
         env:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:3001/api' }}
           NODE_ENV: production
 
       - name: Copy 404.html
-        run: cp ./frontend/public/404.html ./frontend/dist/404.html
+        run: cp ./terminal-reporting-app/frontend/public/404.html ./terminal-reporting-app/frontend/dist/404.html
 
       - name: Add .nojekyll
-        run: touch ./frontend/dist/.nojekyll
+        run: touch ./terminal-reporting-app/frontend/dist/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -51,7 +51,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend/dist'
+          path: './terminal-reporting-app/frontend/dist'
 
   deploy:
     environment:
