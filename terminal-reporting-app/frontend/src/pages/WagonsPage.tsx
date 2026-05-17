@@ -74,7 +74,7 @@ export default function WagonsPage() {
         trainNumber: form.trainNumber || undefined,
         arrivalAt: form.arrivalAt.toISOString(),
         containerId: form.containerId ? Number(form.containerId) : undefined,
-        status: 'EXPECTED',
+        status: 'EXPECTED' as any,
       });
 
       setForm({

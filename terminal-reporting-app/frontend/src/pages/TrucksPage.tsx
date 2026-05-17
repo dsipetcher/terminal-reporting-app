@@ -58,7 +58,10 @@ export default function TrucksPage() {
     e.preventDefault();
     
     try {
-      await trucksApi.create(truckForm);
+      await trucksApi.create({
+        ...truckForm,
+        truckType: truckForm.truckType as any
+      });
       
       setTruckForm({
         licensePlate: '',
@@ -88,7 +91,7 @@ export default function TrucksPage() {
         timeSlot: visitForm.timeSlot.toISOString(),
         purpose: visitForm.purpose,
         gateNumber: visitForm.gateNumber || undefined,
-        status: 'SCHEDULED',
+        status: 'SCHEDULED' as any,
       });
       
       setVisitForm({

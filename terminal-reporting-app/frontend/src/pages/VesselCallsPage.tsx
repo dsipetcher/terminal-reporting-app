@@ -70,7 +70,7 @@ export default function VesselCallsPage() {
         berthId: form.berthId ? Number(form.berthId) : undefined,
         agent: form.agent || undefined,
         purpose: form.purpose || undefined,
-        status: 'EXPECTED',
+        status: 'EXPECTED' as any,
       });
       
       setForm({
