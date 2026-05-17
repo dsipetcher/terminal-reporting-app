@@ -5,10 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   
-  // Для GitHub Pages используйте название вашего репозитория
+  // Для GitHub Pages - используйте название вашего репозитория
   // Например: base: '/terminal-reporting-app/'
-  // Для обычного домена оставьте: base: '/'
-  base: process.env.GITHUB_PAGES === 'true' ? '/terminal-reporting-app/' : '/',
+  base: '/terminal-reporting-app/',
   
   server: {
     host: '0.0.0.0',
