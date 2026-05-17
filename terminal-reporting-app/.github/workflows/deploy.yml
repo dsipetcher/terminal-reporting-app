@@ -39,6 +39,9 @@ jobs:
           VITE_API_URL: ${{ secrets.VITE_API_URL || 'http://localhost:3001/api' }}
           NODE_ENV: production
 
+      - name: Add .nojekyll
+        run: touch ./frontend/dist/.nojekyll
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
