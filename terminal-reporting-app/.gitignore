@@ -1,0 +1,18 @@
+# Root gitignore
+node_modules/
+.env
+.env.local
+*.log
+dist/
+build/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Database
+backend/*.db
+backend/*.db-journal
+
+# Prisma migrations (optional - закомментируйте если хотите сохранить миграции)
+# backend/prisma/migrations/

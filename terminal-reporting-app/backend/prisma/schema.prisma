@@ -1,31 +1,200 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Warehouse {
-  id          Int     @id @default(autoincrement())
-  number      String  @unique            // Номер склада
-  capacity    Float                     // Максимальный объем склада
-  wagons      Wagon[]                   // Связь с вагонами
+// ============================================
+// СКЛАДЫ И ХРАНЕНИЕ
+// ============================================
 
-  /// Поле не сохраняется в базе, а рассчитывается вручную при необходимости
-  // currentLoad Float?   // если хочешь хранить заполненность, но лучше рассчитывать
+model Warehouse {
+  id          Int         @id @default(autoincrement())
+  number      String      @unique
+  name        String?
+  capacity    Float
+  warehouseType String    @default("OPEN_YARD") // OPEN_YARD, COVERED, REFRIGERATED, CUSTOMS, EMPTY_DEPOT
+  zone        String?
+  
+  wagons      Wagon[]
+  containers  Container[]
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
 }
+
+// ============================================
+// ЖЕЛЕЗНОДОРОЖНЫЙ ТРАНСПОРТ
+// ============================================
 
 model Wagon {
-  id          Int       @id @default(autoincrement())
-  number      String
-  cargo       String
-  cargoWeight Float?
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
-  warehouseId Int
-  track       String
-  arrivalAt   DateTime
+  id              Int       @id @default(autoincrement())
+  number          String    @unique
+  wagonType       String    // PLATFORM, GONDOLA, BOXCAR, TANK, REFRIGERATOR
+  cargo           String?
+  cargoWeight     Float?
+  
+  warehouse       Warehouse? @relation(fields: [warehouseId], references: [id])
+  warehouseId     Int?
+  
+  track           String?
+  trainNumber     String?
+  arrivalAt       DateTime
+  departureAt     DateTime?
+  
+  status          String    @default("EXPECTED") // EXPECTED, ARRIVED, UNLOADING, LOADING, DEPARTED
+  
+  container       Container? @relation(fields: [containerId], references: [id])
+  containerId     Int?
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
+// ============================================
+// МОРСКОЙ ТРАНСПОРТ
+// ============================================
 
+model Vessel {
+  id            Int           @id @default(autoincrement())
+  name          String
+  imoNumber     String        @unique
+  vesselType    String        // CONTAINER, BULK_CARRIER, TANKER, RORO, GENERAL_CARGO, OTHER
+  grossTonnage  Float?
+  deadweight    Float?
+  length        Float?
+  beam          Float?
+  draft         Float?
+  flag          String?
+  owner         String?
+  
+  vesselCalls   VesselCall[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model VesselCall {
+  id            Int           @id @default(autoincrement())
+  vessel        Vessel        @relation(fields: [vesselId], references: [id])
+  vesselId      Int
+  
+  voyageNumber  String
+  
+  eta           DateTime      // Expected Time of Arrival
+  etd           DateTime?     // Expected Time of Departure
+  ata           DateTime?     // Actual Time of Arrival
+  atd           DateTime?     // Actual Time of Departure
+  
+  berth         Berth?        @relation(fields: [berthId], references: [id])
+  berthId       Int?
+  
+  status        String        @default("EXPECTED") // EXPECTED, ARRIVED, BERTHED, IN_OPERATION, DEPARTED, CANCELLED
+  
+  agent         String?
+  purpose       String?
+  
+  containers    Container[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// ============================================
+// ПРИЧАЛЫ
+// ============================================
+
+model Berth {
+  id            Int           @id @default(autoincrement())
+  number        String        @unique
+  name          String?
+  berthType     String        // CONTAINER, BULK, LIQUID, RORO, GENERAL, MULTI_PURPOSE
+  length        Float
+  depth         Float
+  maxDeadweight Float?
+  
+  isActive      Boolean       @default(true)
+  
+  vesselCalls   VesselCall[]
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+// ============================================
+// КОНТЕЙНЕРЫ
+// ============================================
+
+model Container {
+  id              Int             @id @default(autoincrement())
+  containerNumber String          @unique
+  containerType   String          // TWENTY_GP, TWENTY_HC, FORTY_GP, FORTY_HC, FORTY_FIVE_HC, TWENTY_RF, FORTY_RF, TWENTY_OT, FORTY_OT, TWENTY_FR, FORTY_FR, TWENTY_TK
+  
+  status          String          // EMPTY, FULL, ON_VESSEL, IN_TERMINAL, ON_DELIVERY, DELIVERED
+  
+  cargoDescription String?
+  grossWeight     Float?
+  sealNumber      String?
+  
+  vesselCall      VesselCall?     @relation(fields: [vesselCallId], references: [id])
+  vesselCallId    Int?
+  
+  warehouse       Warehouse?      @relation(fields: [warehouseId], references: [id])
+  warehouseId     Int?
+  
+  location        String?
+  
+  wagons          Wagon[]
+  truckVisits     TruckVisit[]
+  
+  portOfLoading   String?
+  portOfDischarge String?
+  blNumber        String?         // Bill of Lading number
+  
+  customsStatus   String?
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+// ============================================
+// АВТОТРАНСПОРТ
+// ============================================
+
+model Truck {
+  id              Int           @id @default(autoincrement())
+  licensePlate    String        @unique
+  truckType       String        // TRUCK, CONTAINER_TRUCK, DUMP_TRUCK, REFRIGERATOR
+  carrier         String
+  driverName      String?
+  driverDocument  String?
+  
+  visits          TruckVisit[]
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model TruckVisit {
+  id              Int           @id @default(autoincrement())
+  truck           Truck         @relation(fields: [truckId], references: [id])
+  truckId         Int
+  
+  timeSlot        DateTime
+  timeIn          DateTime?
+  timeOut         DateTime?
+  
+  purpose         String
+  gateNumber      String?
+  
+  status          String        @default("SCHEDULED") // SCHEDULED, ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED
+  
+  container       Container?    @relation(fields: [containerId], references: [id])
+  containerId     Int?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
