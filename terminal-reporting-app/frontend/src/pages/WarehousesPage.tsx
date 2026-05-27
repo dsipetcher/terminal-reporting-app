@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { warehousesApi } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -31,8 +31,8 @@ export default function WarehousesPage() {
   const fetchWarehouses = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('http://localhost:3001/api/warehouses');
-      setWarehouses(res.data);
+      const data = await warehousesApi.getAll();
+      setWarehouses(data);
     } catch (error) {
       console.error('Ошибка при загрузке складов:', error);
     } finally {
@@ -50,11 +50,11 @@ export default function WarehousesPage() {
     if (!number || capacity <= 0) return;
 
     try {
-      await axios.post('http://localhost:3001/api/warehouses', {
+      await warehousesApi.create({
         number,
         name: name || undefined,
         capacity,
-        warehouseType,
+        warehouseType: warehouseType as any,
       });
 
       setNumber('');

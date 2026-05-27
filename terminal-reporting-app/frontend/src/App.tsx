@@ -21,6 +21,7 @@ import ContainersPage from './pages/ContainersPage';
 import TrucksPage from './pages/TrucksPage';
 import WagonsPage from './pages/WagonsPage';
 import WarehousesPage from './pages/WarehousesPage';
+import { IS_DEMO_MODE } from './api';
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -157,6 +158,13 @@ export default function App() {
               </div>
             </div>
           </header>
+
+          {IS_DEMO_MODE && (
+            <div className="bg-amber-50 border-b border-amber-200 px-6 py-3 text-sm text-amber-900">
+              Демо-режим: GitHub Pages показывает интерфейс с тестовыми данными в браузере.
+              Для полной работы с базой данных запустите приложение локально через start.bat или start.sh.
+            </div>
+          )}
 
           {/* Page Content */}
           <main className="p-6 bg-gray-50 min-h-[calc(100vh-73px)]">

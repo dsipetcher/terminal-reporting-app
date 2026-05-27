@@ -10,9 +10,20 @@ import type {
   Wagon,
   DashboardStats,
 } from '../types';
+import { API_BASE_URL, IS_DEMO_MODE } from './config';
+import {
+  demoBerthsApi,
+  demoContainersApi,
+  demoDashboardApi,
+  demoTruckVisitsApi,
+  demoTrucksApi,
+  demoVesselCallsApi,
+  demoVesselsApi,
+  demoWagonsApi,
+  demoWarehousesApi,
+} from './demoStore';
 
-// Использовать переменную окружения для production или localhost для разработки
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+export { API_BASE_URL, IS_DEMO_MODE } from './config';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,13 +32,11 @@ const api = axios.create({
   },
 });
 
-// Dashboard API
-export const dashboardApi = {
+const realDashboardApi = {
   getStats: () => api.get<DashboardStats>('/dashboard/stats').then(res => res.data),
 };
 
-// Vessels API
-export const vesselsApi = {
+const realVesselsApi = {
   getAll: () => api.get<Vessel[]>('/vessels').then(res => res.data),
   getById: (id: number) => api.get<Vessel>(`/vessels/${id}`).then(res => res.data),
   create: (data: Partial<Vessel>) => api.post<Vessel>('/vessels', data).then(res => res.data),
@@ -35,8 +44,7 @@ export const vesselsApi = {
   delete: (id: number) => api.delete(`/vessels/${id}`),
 };
 
-// Vessel Calls API
-export const vesselCallsApi = {
+const realVesselCallsApi = {
   getAll: (params?: { status?: string; fromDate?: string; toDate?: string }) =>
     api.get<VesselCall[]>('/vessel-calls', { params }).then(res => res.data),
   getById: (id: number) => api.get<VesselCall>(`/vessel-calls/${id}`).then(res => res.data),
@@ -48,8 +56,7 @@ export const vesselCallsApi = {
   delete: (id: number) => api.delete(`/vessel-calls/${id}`),
 };
 
-// Berths API
-export const berthsApi = {
+const realBerthsApi = {
   getAll: () => api.get<Berth[]>('/berths').then(res => res.data),
   getById: (id: number) => api.get<Berth>(`/berths/${id}`).then(res => res.data),
   create: (data: Partial<Berth>) => api.post<Berth>('/berths', data).then(res => res.data),
@@ -57,8 +64,7 @@ export const berthsApi = {
   delete: (id: number) => api.delete(`/berths/${id}`),
 };
 
-// Containers API
-export const containersApi = {
+const realContainersApi = {
   getAll: (params?: { status?: string; containerType?: string; warehouseId?: number }) =>
     api.get<Container[]>('/containers', { params }).then(res => res.data),
   getById: (id: number) => api.get<Container>(`/containers/${id}`).then(res => res.data),
@@ -72,8 +78,7 @@ export const containersApi = {
   delete: (id: number) => api.delete(`/containers/${id}`),
 };
 
-// Trucks API
-export const trucksApi = {
+const realTrucksApi = {
   getAll: () => api.get<Truck[]>('/trucks').then(res => res.data),
   getById: (id: number) => api.get<Truck>(`/trucks/${id}`).then(res => res.data),
   create: (data: Partial<Truck>) => api.post<Truck>('/trucks', data).then(res => res.data),
@@ -81,8 +86,7 @@ export const trucksApi = {
   delete: (id: number) => api.delete(`/trucks/${id}`),
 };
 
-// Truck Visits API
-export const truckVisitsApi = {
+const realTruckVisitsApi = {
   getAll: (params?: { status?: string; date?: string }) =>
     api.get<TruckVisit[]>('/truck-visits', { params }).then(res => res.data),
   getById: (id: number) => api.get<TruckVisit>(`/truck-visits/${id}`).then(res => res.data),
@@ -94,8 +98,7 @@ export const truckVisitsApi = {
   delete: (id: number) => api.delete(`/truck-visits/${id}`),
 };
 
-// Warehouses API
-export const warehousesApi = {
+const realWarehousesApi = {
   getAll: () => api.get<Warehouse[]>('/warehouses').then(res => res.data),
   getById: (id: number) => api.get<Warehouse>(`/warehouses/${id}`).then(res => res.data),
   create: (data: Partial<Warehouse>) => api.post<Warehouse>('/warehouses', data).then(res => res.data),
@@ -104,8 +107,7 @@ export const warehousesApi = {
   delete: (id: number) => api.delete(`/warehouses/${id}`),
 };
 
-// Wagons API
-export const wagonsApi = {
+const realWagonsApi = {
   getAll: (params?: { status?: string; warehouseId?: number }) =>
     api.get<Wagon[]>('/wagons', { params }).then(res => res.data),
   getById: (id: number) => api.get<Wagon>(`/wagons/${id}`).then(res => res.data),
@@ -115,5 +117,15 @@ export const wagonsApi = {
     api.patch<Wagon>(`/wagons/${id}/status`, { status }).then(res => res.data),
   delete: (id: number) => api.delete(`/wagons/${id}`),
 };
+
+export const dashboardApi = IS_DEMO_MODE ? demoDashboardApi : realDashboardApi;
+export const vesselsApi = IS_DEMO_MODE ? demoVesselsApi : realVesselsApi;
+export const vesselCallsApi = IS_DEMO_MODE ? demoVesselCallsApi : realVesselCallsApi;
+export const berthsApi = IS_DEMO_MODE ? demoBerthsApi : realBerthsApi;
+export const containersApi = IS_DEMO_MODE ? demoContainersApi : realContainersApi;
+export const trucksApi = IS_DEMO_MODE ? demoTrucksApi : realTrucksApi;
+export const truckVisitsApi = IS_DEMO_MODE ? demoTruckVisitsApi : realTruckVisitsApi;
+export const warehousesApi = IS_DEMO_MODE ? demoWarehousesApi : realWarehousesApi;
+export const wagonsApi = IS_DEMO_MODE ? demoWagonsApi : realWagonsApi;
 
 export default api;
