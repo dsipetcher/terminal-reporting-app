@@ -31,15 +31,12 @@ if not exist "frontend\node_modules\" (
 )
 
 REM Prisma setup
-if not exist "backend\dev.db" (
-    echo [2/4] Setting up database...
-    cd backend
-    call npx prisma migrate dev --name init
-    call npx prisma generate
-    cd ..
-) else (
-    echo [2/4] Database already exists
-)
+echo [2/4] Setting up database...
+cd backend
+call npx prisma db push
+call npx prisma generate
+call npm run prisma:seed
+cd ..
 
 echo [3/4] Starting Backend API...
 cd backend

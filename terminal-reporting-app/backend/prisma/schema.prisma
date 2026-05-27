@@ -198,3 +198,16 @@ model TruckVisit {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 }
+
+// ============================================
+// ПОЛЬЗОВАТЕЛИ И АВТОРИЗАЦИЯ
+// ============================================
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("USER") // ADMIN, USER
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

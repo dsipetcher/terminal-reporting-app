@@ -12,6 +12,7 @@ import type {
 } from '../types';
 import { API_BASE_URL, IS_DEMO_MODE } from './config';
 import {
+  demoAuthApi,
   demoBerthsApi,
   demoContainersApi,
   demoDashboardApi,
@@ -22,6 +23,8 @@ import {
   demoWagonsApi,
   demoWarehousesApi,
 } from './demoStore';
+import { getStoredToken } from './authStorage';
+import type { AuthResponse, CreateUserRequest, User } from '../types';
 
 export { API_BASE_URL, IS_DEMO_MODE } from './config';
 
@@ -31,6 +34,24 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+api.interceptors.request.use((config) => {
+  const token = getStoredToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+const realAuthApi = {
+  login: (username: string, password: string) =>
+    api.post<AuthResponse>('/auth/login', { username, password }).then((res) => res.data),
+  getMe: () => api.get<User>('/auth/me').then((res) => res.data),
+  getUsers: () => api.get<User[]>('/auth/users').then((res) => res.data),
+  createUser: (data: CreateUserRequest) =>
+    api.post<User>('/auth/users', data).then((res) => res.data),
+  deleteUser: (id: number) => api.delete(`/auth/users/${id}`),
+};
 
 const realDashboardApi = {
   getStats: () => api.get<DashboardStats>('/dashboard/stats').then(res => res.data),
@@ -118,6 +139,7 @@ const realWagonsApi = {
   delete: (id: number) => api.delete(`/wagons/${id}`),
 };
 
+export const authApi = IS_DEMO_MODE ? demoAuthApi : realAuthApi;
 export const dashboardApi = IS_DEMO_MODE ? demoDashboardApi : realDashboardApi;
 export const vesselsApi = IS_DEMO_MODE ? demoVesselsApi : realVesselsApi;
 export const vesselCallsApi = IS_DEMO_MODE ? demoVesselCallsApi : realVesselCallsApi;

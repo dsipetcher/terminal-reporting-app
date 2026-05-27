@@ -247,3 +247,25 @@ export interface DashboardStats {
   trucks: number;
   warehouses: number;
 }
+
+// Auth
+export type UserRole = 'ADMIN' | 'USER';
+
+export interface User {
+  id: number;
+  username: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface CreateUserRequest {
+  username: string;
+  password: string;
+  role: UserRole;
+}

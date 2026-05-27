@@ -30,15 +30,12 @@ if [ ! -d "frontend/node_modules" ]; then
 fi
 
 # Prisma setup
-if [ ! -f "backend/dev.db" ]; then
-    echo "[2/4] Setting up database..."
-    cd backend
-    npx prisma migrate dev --name init
-    npx prisma generate
-    cd ..
-else
-    echo "[2/4] Database already exists"
-fi
+echo "[2/4] Setting up database..."
+cd backend
+npx prisma db push
+npx prisma generate
+npm run prisma:seed
+cd ..
 
 echo "[3/4] Starting Backend API..."
 cd backend

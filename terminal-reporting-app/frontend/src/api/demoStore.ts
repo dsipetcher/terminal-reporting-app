@@ -1,9 +1,12 @@
 import type {
+  AuthResponse,
   Berth,
   Container,
+  CreateUserRequest,
   DashboardStats,
   Truck,
   TruckVisit,
+  User,
   Vessel,
   VesselCall,
   Wagon,
@@ -508,5 +511,72 @@ export const demoWagonsApi = {
     const index = wagons.findIndex((item) => item.id === id);
     wagons.splice(index, 1);
     return simulateNetwork(undefined);
+  },
+};
+
+const demoUsers: User[] = [
+  {
+    id: 1,
+    username: 'admin',
+    role: 'ADMIN',
+    createdAt: now,
+    updatedAt: now,
+  },
+];
+
+let demoUserId = 2;
+
+export const demoAuthApi = {
+  login: async (username: string, password: string): Promise<AuthResponse> => {
+    await simulateNetwork(null);
+
+    if (username === 'admin' && password === 'admin') {
+      return {
+        token: 'demo-admin-token',
+        user: demoUsers[0],
+      };
+    }
+
+    const user = demoUsers.find((item) => item.username === username);
+    if (!user) {
+      throw new Error('Invalid username or password');
+    }
+
+    return {
+      token: `demo-token-${user.id}`,
+      user,
+    };
+  },
+  getMe: async (): Promise<User> => {
+    const stored = localStorage.getItem('tos_user');
+    if (!stored) {
+      throw new Error('Not authenticated');
+    }
+    return simulateNetwork(JSON.parse(stored) as User);
+  },
+  getUsers: async (): Promise<User[]> => simulateNetwork([...demoUsers]),
+  createUser: async (data: CreateUserRequest): Promise<User> => {
+    if (demoUsers.some((item) => item.username === data.username)) {
+      throw new Error('Username already exists');
+    }
+
+    const user: User = {
+      id: demoUserId++,
+      username: data.username,
+      role: data.role,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    demoUsers.push(user);
+    return simulateNetwork(user);
+  },
+  deleteUser: async (id: number): Promise<void> => {
+    const index = demoUsers.findIndex((item) => item.id === id);
+    if (index === -1) {
+      throw new Error('User not found');
+    }
+    demoUsers.splice(index, 1);
+    await simulateNetwork(null);
   },
 };

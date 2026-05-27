@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
+import prisma from './lib/prisma';
+import { authenticateToken } from './middleware/auth';
 
-// Импорт маршрутов
+import authRouter from './routes/auth';
 import vesselsRouter from './routes/vessels';
 import vesselCallsRouter from './routes/vesselCalls';
 import berthsRouter from './routes/berths';
@@ -13,18 +14,17 @@ import warehousesRouter from './routes/warehouses';
 import wagonsRouter from './routes/wagons';
 
 const app = express();
-const prisma = new PrismaClient();
 
 app.use(cors());
 app.use(express.json());
 
-// Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Dashboard stats
-app.get('/api/dashboard/stats', async (req, res) => {
+app.use('/api/auth', authRouter);
+
+app.get('/api/dashboard/stats', authenticateToken, async (_req, res) => {
   try {
     const [
       vesselCallsCount,
@@ -62,19 +62,18 @@ app.get('/api/dashboard/stats', async (req, res) => {
   }
 });
 
-// Подключение маршрутов
-app.use('/api/vessels', vesselsRouter);
-app.use('/api/vessel-calls', vesselCallsRouter);
-app.use('/api/berths', berthsRouter);
-app.use('/api/containers', containersRouter);
-app.use('/api/trucks', trucksRouter);
-app.use('/api/truck-visits', truckVisitsRouter);
-app.use('/api/warehouses', warehousesRouter);
-app.use('/api/wagons', wagonsRouter);
+app.use('/api/vessels', authenticateToken, vesselsRouter);
+app.use('/api/vessel-calls', authenticateToken, vesselCallsRouter);
+app.use('/api/berths', authenticateToken, berthsRouter);
+app.use('/api/containers', authenticateToken, containersRouter);
+app.use('/api/trucks', authenticateToken, trucksRouter);
+app.use('/api/truck-visits', authenticateToken, truckVisitsRouter);
+app.use('/api/warehouses', authenticateToken, warehousesRouter);
+app.use('/api/wagons', authenticateToken, wagonsRouter);
 
 const PORT = 3001;
 app.listen(PORT, () => {
-  console.log(`🚢 Terminal Operating System API`);
-  console.log(`📡 Server running on http://localhost:${PORT}`);
-  console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+  console.log('Terminal Operating System API');
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
 });
