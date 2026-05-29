@@ -5,10 +5,29 @@ import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { StatusBadge } from '../components/StatusBadge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EntityActions } from '../components/EntityActions';
 import {
   CONTAINER_TYPE_LABELS,
   CONTAINER_STATUS_LABELS,
+  CUSTOMS_STATUS_LABELS,
+  validateContainerNumber,
 } from '../utils';
+
+const emptyForm = {
+  containerNumber: '',
+  containerType: 'FORTY_HC',
+  status: 'IN_TERMINAL',
+  cargoDescription: '',
+  grossWeight: '',
+  sealNumber: '',
+  vesselCallId: '',
+  warehouseId: '',
+  location: '',
+  portOfLoading: '',
+  portOfDischarge: '',
+  blNumber: '',
+  customsStatus: '',
+};
 
 export default function ContainersPage() {
   const [containers, setContainers] = useState<Container[]>([]);
@@ -17,18 +36,11 @@ export default function ContainersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [movingId, setMovingId] = useState<number | null>(null);
   const [searchNumber, setSearchNumber] = useState('');
-  
-  const [form, setForm] = useState({
-    containerNumber: '',
-    containerType: 'FORTY_HC',
-    status: 'IN_TERMINAL',
-    cargoDescription: '',
-    grossWeight: '',
-    vesselCallId: '',
-    warehouseId: '',
-    location: '',
-  });
+  const [form, setForm] = useState(emptyForm);
+  const [moveForm, setMoveForm] = useState({ warehouseId: '', location: '', status: 'IN_TERMINAL' });
 
   useEffect(() => {
     loadData();
@@ -38,7 +50,7 @@ export default function ContainersPage() {
     try {
       setLoading(true);
       const [containersData, warehousesData, vesselCallsData] = await Promise.all([
-        containersApi.getAll(),
+        containersApi.getAll(selectedStatus !== 'ALL' ? { status: selectedStatus } : undefined),
         warehousesApi.getAll(),
         vesselCallsApi.getAll(),
       ]);
@@ -52,36 +64,106 @@ export default function ContainersPage() {
     }
   };
 
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const startEdit = (container: Container) => {
+    setEditingId(container.id);
+    setForm({
+      containerNumber: container.containerNumber,
+      containerType: container.containerType,
+      status: container.status,
+      cargoDescription: container.cargoDescription ?? '',
+      grossWeight: container.grossWeight?.toString() ?? '',
+      sealNumber: container.sealNumber ?? '',
+      vesselCallId: container.vesselCallId ? String(container.vesselCallId) : '',
+      warehouseId: container.warehouseId ? String(container.warehouseId) : '',
+      location: container.location ?? '',
+      portOfLoading: container.portOfLoading ?? '',
+      portOfDischarge: container.portOfDischarge ?? '',
+      blNumber: container.blNumber ?? '',
+      customsStatus: container.customsStatus ?? '',
+    });
+    setShowForm(true);
+  };
+
+  const buildPayload = () => ({
+    containerNumber: form.containerNumber.toUpperCase(),
+    containerType: form.containerType as Container['containerType'],
+    status: form.status as Container['status'],
+    cargoDescription: form.cargoDescription || undefined,
+    grossWeight: form.grossWeight ? parseFloat(form.grossWeight) : undefined,
+    sealNumber: form.sealNumber || undefined,
+    vesselCallId: form.vesselCallId ? Number(form.vesselCallId) : undefined,
+    warehouseId: form.warehouseId ? Number(form.warehouseId) : undefined,
+    location: form.location || undefined,
+    portOfLoading: form.portOfLoading || undefined,
+    portOfDischarge: form.portOfDischarge || undefined,
+    blNumber: form.blNumber || undefined,
+    customsStatus: form.customsStatus || undefined,
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    if (!validateContainerNumber(form.containerNumber)) {
+      alert('Неверный номер контейнера (ISO 6346). Проверьте формат и контрольную цифру.');
+      return;
+    }
+
     try {
-      await containersApi.create({
-        containerNumber: form.containerNumber.toUpperCase(),
-        containerType: form.containerType as any,
-        status: form.status as any,
-        cargoDescription: form.cargoDescription || undefined,
-        grossWeight: form.grossWeight ? parseFloat(form.grossWeight) : undefined,
-        vesselCallId: form.vesselCallId ? Number(form.vesselCallId) : undefined,
-        warehouseId: form.warehouseId ? Number(form.warehouseId) : undefined,
-        location: form.location || undefined,
-      });
-      
-      setForm({
-        containerNumber: '',
-        containerType: 'FORTY_HC',
-        status: 'IN_TERMINAL',
-        cargoDescription: '',
-        grossWeight: '',
-        vesselCallId: '',
-        warehouseId: '',
-        location: '',
-      });
-      setShowForm(false);
+      if (editingId) {
+        await containersApi.update(editingId, buildPayload());
+      } else {
+        await containersApi.create(buildPayload());
+      }
+      resetForm();
       loadData();
     } catch (error) {
-      console.error('Error creating container:', error);
-      alert('Ошибка при создании контейнера');
+      console.error('Error saving container:', error);
+      alert(editingId ? 'Ошибка при обновлении контейнера' : 'Ошибка при создании контейнера');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Удалить контейнер?')) return;
+
+    try {
+      await containersApi.delete(id);
+      loadData();
+    } catch (error) {
+      console.error('Error deleting container:', error);
+      alert('Не удалось удалить контейнер.');
+    }
+  };
+
+  const startMove = (container: Container) => {
+    setMovingId(container.id);
+    setMoveForm({
+      warehouseId: container.warehouseId ? String(container.warehouseId) : '',
+      location: container.location ?? '',
+      status: container.status,
+    });
+  };
+
+  const handleMove = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!movingId) return;
+
+    try {
+      await containersApi.move(movingId, {
+        warehouseId: moveForm.warehouseId ? Number(moveForm.warehouseId) : undefined,
+        location: moveForm.location || undefined,
+        status: moveForm.status,
+      });
+      setMovingId(null);
+      loadData();
+    } catch (error) {
+      console.error('Error moving container:', error);
+      alert('Ошибка при перемещении контейнера');
     }
   };
 
@@ -90,11 +172,11 @@ export default function ContainersPage() {
       loadData();
       return;
     }
-    
+
     try {
       const container = await containersApi.getByNumber(searchNumber.toUpperCase());
       setContainers([container]);
-    } catch (error) {
+    } catch {
       alert('Контейнер не найден');
       loadData();
     }
@@ -110,12 +192,15 @@ export default function ContainersPage() {
 
   return (
     <div>
-      <PageHeader 
-        title="Управление контейнерами" 
+      <PageHeader
+        title="Управление контейнерами"
         subtitle={`Всего: ${containers.length} контейнеров`}
         action={
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm && !editingId) resetForm();
+              else { setEditingId(null); setForm(emptyForm); setShowForm(!showForm); }
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             {showForm ? 'Отменить' : '+ Новый контейнер'}
@@ -123,14 +208,11 @@ export default function ContainersPage() {
         }
       />
 
-      {/* Форма добавления */}
       {showForm && (
-        <Card className="mb-6">
+        <Card className="mb-6" title={editingId ? 'Редактирование контейнера' : 'Новый контейнер'}>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="label-field">
-                Номер контейнера * (11 символов)
-              </label>
+              <label className="label-field">Номер контейнера * (ISO 6346)</label>
               <input
                 type="text"
                 value={form.containerNumber}
@@ -139,19 +221,13 @@ export default function ContainersPage() {
                 placeholder="MSCU1234567"
                 maxLength={11}
                 required
+                disabled={!!editingId}
               />
             </div>
 
             <div>
-              <label className="label-field">
-                Тип контейнера *
-              </label>
-              <select
-                value={form.containerType}
-                onChange={(e) => setForm({ ...form, containerType: e.target.value })}
-                className="input-field"
-                required
-              >
+              <label className="label-field">Тип контейнера *</label>
+              <select value={form.containerType} onChange={(e) => setForm({ ...form, containerType: e.target.value })} className="input-field" required>
                 {Object.entries(CONTAINER_TYPE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
@@ -159,15 +235,8 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="label-field">
-                Статус *
-              </label>
-              <select
-                value={form.status}
-                onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="input-field"
-                required
-              >
+              <label className="label-field">Статус *</label>
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="input-field" required>
                 {Object.entries(CONTAINER_STATUS_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
@@ -175,97 +244,85 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="label-field">
-                Вес брутто (тонн)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={form.grossWeight}
-                onChange={(e) => setForm({ ...form, grossWeight: e.target.value })}
-                className="input-field"
-              />
+              <label className="label-field">Вес брутто (тонн)</label>
+              <input type="number" step="0.1" value={form.grossWeight} onChange={(e) => setForm({ ...form, grossWeight: e.target.value })} className="input-field" />
             </div>
 
             <div>
-              <label className="label-field">
-                Судозаход
-              </label>
-              <select
-                value={form.vesselCallId}
-                onChange={(e) => setForm({ ...form, vesselCallId: e.target.value })}
-                className="input-field"
-              >
+              <label className="label-field">Номер пломбы</label>
+              <input type="text" value={form.sealNumber} onChange={(e) => setForm({ ...form, sealNumber: e.target.value })} className="input-field" />
+            </div>
+
+            <div>
+              <label className="label-field">Судозаход</label>
+              <select value={form.vesselCallId} onChange={(e) => setForm({ ...form, vesselCallId: e.target.value })} className="input-field">
                 <option value="">Не выбран</option>
                 {vesselCalls.map((vc) => (
-                  <option key={vc.id} value={vc.id}>
-                    {vc.vessel.name} - {vc.voyageNumber}
-                  </option>
+                  <option key={vc.id} value={vc.id}>{vc.vessel.name} - {vc.voyageNumber}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="label-field">
-                Склад
-              </label>
-              <select
-                value={form.warehouseId}
-                onChange={(e) => setForm({ ...form, warehouseId: e.target.value })}
-                className="input-field"
-              >
+              <label className="label-field">Склад</label>
+              <select value={form.warehouseId} onChange={(e) => setForm({ ...form, warehouseId: e.target.value })} className="input-field">
                 <option value="">Не выбран</option>
                 {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.number} {w.name}
-                  </option>
+                  <option key={w.id} value={w.id}>{w.number} {w.name}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="label-field">
-                Местоположение (блок-ряд-ярус)
-              </label>
-              <input
-                type="text"
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-                className="input-field"
-                placeholder="A-12-3"
-              />
+              <label className="label-field">Местоположение (блок-ряд-ярус)</label>
+              <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className="input-field" placeholder="A-12-3" />
             </div>
 
             <div>
-              <label className="label-field">
-                Описание груза
-              </label>
-              <input
-                type="text"
-                value={form.cargoDescription}
-                onChange={(e) => setForm({ ...form, cargoDescription: e.target.value })}
-                className="input-field"
-              />
+              <label className="label-field">Порт погрузки</label>
+              <input type="text" value={form.portOfLoading} onChange={(e) => setForm({ ...form, portOfLoading: e.target.value })} className="input-field" />
+            </div>
+
+            <div>
+              <label className="label-field">Порт выгрузки</label>
+              <input type="text" value={form.portOfDischarge} onChange={(e) => setForm({ ...form, portOfDischarge: e.target.value })} className="input-field" />
+            </div>
+
+            <div>
+              <label className="label-field">Номер коносамента</label>
+              <input type="text" value={form.blNumber} onChange={(e) => setForm({ ...form, blNumber: e.target.value })} className="input-field" />
+            </div>
+
+            <div>
+              <label className="label-field">Таможенный статус</label>
+              <select value={form.customsStatus} onChange={(e) => setForm({ ...form, customsStatus: e.target.value })} className="input-field">
+                <option value="">Не указан</option>
+                {Object.entries(CUSTOMS_STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="label-field">Описание груза</label>
+              <input type="text" value={form.cargoDescription} onChange={(e) => setForm({ ...form, cargoDescription: e.target.value })} className="input-field" />
             </div>
 
             <div className="md:col-span-2 flex gap-4">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Создать контейнер
+              <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                {editingId ? 'Сохранить' : 'Создать контейнер'}
+              </button>
+              <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">
+                Отмена
               </button>
             </div>
           </form>
         </Card>
       )}
 
-      {/* Поиск и фильтр */}
       <div className="mb-6 flex flex-col md:flex-row gap-4">
         <div className="flex-1">
-          <label className="label-field">
-            Поиск по номеру:
-          </label>
+          <label className="label-field">Поиск по номеру:</label>
           <div className="flex gap-2">
             <input
               type="text"
@@ -275,28 +332,16 @@ export default function ContainersPage() {
               className="flex-1 border border-slate-600 rounded-lg px-4 py-2"
               maxLength={11}
             />
-            <button
-              onClick={handleSearch}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Найти
-            </button>
-            <button
-              onClick={() => { setSearchNumber(''); loadData(); }}
-              className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600"
-            >
-              Сбросить
-            </button>
+            <button onClick={handleSearch} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Найти</button>
+            <button onClick={() => { setSearchNumber(''); loadData(); }} className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">Сбросить</button>
           </div>
         </div>
 
         <div>
-          <label className="label-field">
-            Фильтр по статусу:
-          </label>
+          <label className="label-field">Фильтр по статусу:</label>
           <select
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
+            onChange={(e) => { setSelectedStatus(e.target.value); }}
             className="border border-slate-600 rounded-lg px-4 py-2"
           >
             <option value="ALL">Все статусы</option>
@@ -307,7 +352,6 @@ export default function ContainersPage() {
         </div>
       </div>
 
-      {/* Список контейнеров */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredContainers.length === 0 ? (
           <Card className="md:col-span-2 lg:col-span-3">
@@ -321,39 +365,53 @@ export default function ContainersPage() {
                   <h3 className="text-lg font-bold text-primary">{container.containerNumber}</h3>
                   <p className="text-sm text-muted">{CONTAINER_TYPE_LABELS[container.containerType]}</p>
                 </div>
-                <StatusBadge 
-                  status={container.status} 
-                  label={CONTAINER_STATUS_LABELS[container.status]} 
-                />
+                <div className="flex flex-col items-end gap-2">
+                  <StatusBadge status={container.status} label={CONTAINER_STATUS_LABELS[container.status]} />
+                  <EntityActions onEdit={() => startEdit(container)} onDelete={() => handleDelete(container.id)} />
+                </div>
               </div>
 
               <div className="space-y-2">
-                {container.grossWeight && (
-                  <p className="text-sm">
-                    <span className="text-subtle">Вес:</span> {container.grossWeight} т
-                  </p>
-                )}
-                {container.cargoDescription && (
-                  <p className="text-sm">
-                    <span className="text-subtle">Груз:</span> {container.cargoDescription}
-                  </p>
-                )}
-                {container.warehouse && (
-                  <p className="text-sm">
-                    <span className="text-subtle">Склад:</span> {container.warehouse.number}
-                  </p>
-                )}
-                {container.location && (
-                  <p className="text-sm">
-                    <span className="text-subtle">Место:</span> {container.location}
-                  </p>
-                )}
-                {container.vesselCall && (
-                  <p className="text-sm">
-                    <span className="text-subtle">Судно:</span> {container.vesselCall.vessel.name}
-                  </p>
-                )}
+                {container.grossWeight && <p className="text-sm"><span className="text-subtle">Вес:</span> {container.grossWeight} т</p>}
+                {container.cargoDescription && <p className="text-sm"><span className="text-subtle">Груз:</span> {container.cargoDescription}</p>}
+                {container.sealNumber && <p className="text-sm"><span className="text-subtle">Пломба:</span> {container.sealNumber}</p>}
+                {container.warehouse && <p className="text-sm"><span className="text-subtle">Склад:</span> {container.warehouse.number}</p>}
+                {container.location && <p className="text-sm"><span className="text-subtle">Место:</span> {container.location}</p>}
+                {container.vesselCall && <p className="text-sm"><span className="text-subtle">Судно:</span> {container.vesselCall.vessel.name}</p>}
+                {container.portOfLoading && <p className="text-sm"><span className="text-subtle">POL:</span> {container.portOfLoading}</p>}
+                {container.portOfDischarge && <p className="text-sm"><span className="text-subtle">POD:</span> {container.portOfDischarge}</p>}
+                {container.blNumber && <p className="text-sm"><span className="text-subtle">B/L:</span> {container.blNumber}</p>}
+                {container.customsStatus && <p className="text-sm"><span className="text-subtle">Таможня:</span> {CUSTOMS_STATUS_LABELS[container.customsStatus] ?? container.customsStatus}</p>}
               </div>
+
+              {movingId === container.id ? (
+                <form onSubmit={handleMove} className="mt-4 pt-4 border-t border-default space-y-3">
+                  <p className="text-sm font-medium">Перемещение контейнера</p>
+                  <select value={moveForm.warehouseId} onChange={(e) => setMoveForm({ ...moveForm, warehouseId: e.target.value })} className="input-field">
+                    <option value="">Без склада</option>
+                    {warehouses.map((w) => (
+                      <option key={w.id} value={w.id}>{w.number} {w.name}</option>
+                    ))}
+                  </select>
+                  <input type="text" value={moveForm.location} onChange={(e) => setMoveForm({ ...moveForm, location: e.target.value })} className="input-field" placeholder="A-12-3" />
+                  <select value={moveForm.status} onChange={(e) => setMoveForm({ ...moveForm, status: e.target.value })} className="input-field">
+                    {Object.entries(CONTAINER_STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  <div className="flex gap-2">
+                    <button type="submit" className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700">Переместить</button>
+                    <button type="button" onClick={() => setMovingId(null)} className="px-3 py-1 text-sm bg-gray-200 dark:bg-slate-700 rounded">Отмена</button>
+                  </div>
+                </form>
+              ) : (
+                <button
+                  onClick={() => startMove(container)}
+                  className="mt-4 w-full px-3 py-1.5 text-sm bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-900/60"
+                >
+                  Переместить
+                </button>
+              )}
             </Card>
           ))
         )}

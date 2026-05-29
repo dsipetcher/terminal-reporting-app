@@ -111,6 +111,44 @@ router.post('/users', authenticateToken, requireRole('ADMIN'), async (req, res) 
   }
 });
 
+router.put('/users/:id', authenticateToken, requireRole('ADMIN'), async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid user id' });
+    }
+
+    const { password, role } = req.body;
+
+    if (role && !['ADMIN', 'USER'].includes(role)) {
+      return res.status(400).json({ error: 'Role must be ADMIN or USER' });
+    }
+
+    if (password && password.length < 4) {
+      return res.status(400).json({ error: 'Password must be at least 4 characters' });
+    }
+
+    const data: { role?: string; passwordHash?: string } = {};
+    if (role) data.role = role;
+    if (password) data.passwordHash = await bcrypt.hash(password, 10);
+
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data,
+    });
+
+    res.json(sanitizeUser(user));
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 router.delete('/users/:id', authenticateToken, requireRole('ADMIN'), async (req, res) => {
   try {
     const id = Number(req.params.id);

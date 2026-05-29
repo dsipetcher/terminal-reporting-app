@@ -24,7 +24,7 @@ import {
   demoWarehousesApi,
 } from './demoStore';
 import { getStoredToken } from './authStorage';
-import type { AuthResponse, CreateUserRequest, User } from '../types';
+import type { AuthResponse, CreateUserRequest, UpdateUserRequest, User } from '../types';
 
 export { API_BASE_URL, IS_DEMO_MODE } from './config';
 
@@ -50,6 +50,8 @@ const realAuthApi = {
   getUsers: () => api.get<User[]>('/auth/users').then((res) => res.data),
   createUser: (data: CreateUserRequest) =>
     api.post<User>('/auth/users', data).then((res) => res.data),
+  updateUser: (id: number, data: UpdateUserRequest) =>
+    api.put<User>(`/auth/users/${id}`, data).then((res) => res.data),
   deleteUser: (id: number) => api.delete(`/auth/users/${id}`),
 };
 

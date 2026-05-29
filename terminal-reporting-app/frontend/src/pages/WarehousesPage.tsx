@@ -1,32 +1,26 @@
 ﻿import { useEffect, useState } from 'react';
 import { warehousesApi } from '../api';
+import type { Warehouse } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { EntityActions } from '../components/EntityActions';
 import { WAREHOUSE_TYPE_LABELS } from '../utils';
 
-type Warehouse = {
-  id: number;
-  number: string;
-  name?: string;
-  capacity: number;
-  warehouseType: string;
-  zone?: string;
-  load?: number;
-  _count?: {
-    wagons: number;
-    containers: number;
-  };
+const emptyForm = {
+  number: '',
+  name: '',
+  capacity: '',
+  warehouseType: 'OPEN_YARD',
+  zone: '',
 };
 
 export default function WarehousesPage() {
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [number, setNumber] = useState('');
-  const [name, setName] = useState('');
-  const [capacity, setCapacity] = useState<number>(0);
-  const [warehouseType, setWarehouseType] = useState('OPEN_YARD');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const fetchWarehouses = async () => {
     try {
@@ -44,28 +38,61 @@ export default function WarehousesPage() {
     fetchWarehouses();
   }, []);
 
-  const handleAddWarehouse = async (e: React.FormEvent) => {
+  const resetForm = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setShowForm(false);
+  };
+
+  const startEdit = (warehouse: Warehouse) => {
+    setEditingId(warehouse.id);
+    setForm({
+      number: warehouse.number,
+      name: warehouse.name ?? '',
+      capacity: String(warehouse.capacity),
+      warehouseType: warehouse.warehouseType,
+      zone: warehouse.zone ?? '',
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!number || capacity <= 0) return;
+
+    const capacity = parseFloat(form.capacity);
+    if (!form.number || capacity <= 0) return;
+
+    const payload = {
+      number: form.number,
+      name: form.name || undefined,
+      capacity,
+      warehouseType: form.warehouseType as Warehouse['warehouseType'],
+      zone: form.zone || undefined,
+    };
 
     try {
-      await warehousesApi.create({
-        number,
-        name: name || undefined,
-        capacity,
-        warehouseType: warehouseType as any,
-      });
-
-      setNumber('');
-      setName('');
-      setCapacity(0);
-      setWarehouseType('OPEN_YARD');
-      setShowForm(false);
+      if (editingId) {
+        await warehousesApi.update(editingId, payload);
+      } else {
+        await warehousesApi.create(payload);
+      }
+      resetForm();
       fetchWarehouses();
     } catch (err) {
-      console.error('Ошибка при добавлении склада:', err);
-      alert('Ошибка при добавлении склада');
+      console.error('Ошибка при сохранении склада:', err);
+      alert(editingId ? 'Ошибка при обновлении склада' : 'Ошибка при добавлении склада');
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Удалить склад?')) return;
+
+    try {
+      await warehousesApi.delete(id);
+      fetchWarehouses();
+    } catch (err) {
+      console.error('Ошибка при удалении склада:', err);
+      alert('Не удалось удалить склад. Возможно, есть привязанные грузы.');
     }
   };
 
@@ -75,12 +102,15 @@ export default function WarehousesPage() {
 
   return (
     <div>
-      <PageHeader 
-        title="Управление складами" 
+      <PageHeader
+        title="Управление складами"
         subtitle={`Всего: ${warehouses.length} складов`}
         action={
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm && !editingId) resetForm();
+              else { setEditingId(null); setForm(emptyForm); setShowForm(!showForm); }
+            }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             {showForm ? 'Отменить' : '+ Новый склад'}
@@ -89,57 +119,46 @@ export default function WarehousesPage() {
       />
 
       {showForm && (
-        <Card className="mb-6">
-          <form onSubmit={handleAddWarehouse} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="mb-6" title={editingId ? 'Редактирование склада' : 'Новый склад'}>
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="label-field">
-                Номер склада *
-              </label>
+              <label className="label-field">Номер склада *</label>
               <input
                 type="text"
-                placeholder="Номер склада"
-                value={number}
-                onChange={(e) => setNumber(e.target.value)}
+                value={form.number}
+                onChange={(e) => setForm({ ...form, number: e.target.value })}
                 className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="label-field">
-                Название
-              </label>
+              <label className="label-field">Название</label>
               <input
                 type="text"
-                placeholder="Название (опционально)"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
                 className="input-field"
               />
             </div>
 
             <div>
-              <label className="label-field">
-                Вместимость (тонн) *
-              </label>
+              <label className="label-field">Вместимость (тонн) *</label>
               <input
                 type="number"
                 step="0.1"
-                placeholder="Вместимость"
-                value={capacity || ''}
-                onChange={(e) => setCapacity(parseFloat(e.target.value) || 0)}
+                value={form.capacity}
+                onChange={(e) => setForm({ ...form, capacity: e.target.value })}
                 className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="label-field">
-                Тип склада *
-              </label>
+              <label className="label-field">Тип склада *</label>
               <select
-                value={warehouseType}
-                onChange={(e) => setWarehouseType(e.target.value)}
+                value={form.warehouseType}
+                onChange={(e) => setForm({ ...form, warehouseType: e.target.value })}
                 className="input-field"
               >
                 {Object.entries(WAREHOUSE_TYPE_LABELS).map(([value, label]) => (
@@ -148,12 +167,23 @@ export default function WarehousesPage() {
               </select>
             </div>
 
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Добавить склад
+            <div>
+              <label className="label-field">Зона</label>
+              <input
+                type="text"
+                value={form.zone}
+                onChange={(e) => setForm({ ...form, zone: e.target.value })}
+                className="input-field"
+                placeholder="A, B, C..."
+              />
+            </div>
+
+            <div className="md:col-span-2 flex gap-4">
+              <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                {editingId ? 'Сохранить' : 'Добавить склад'}
+              </button>
+              <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">
+                Отмена
               </button>
             </div>
           </form>
@@ -169,19 +199,17 @@ export default function WarehousesPage() {
           warehouses.map((w) => {
             const loadPercentage = w.load ? (w.load / w.capacity) * 100 : 0;
             const freeSpace = w.capacity - (w.load || 0);
-            
+
             return (
               <Card key={w.id} className="hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="text-2xl font-bold text-primary">№{w.number}</h3>
-                    {w.name && (
-                      <p className="text-sm text-muted">{w.name}</p>
-                    )}
-                    <p className="text-xs text-subtle mt-1">
-                      {WAREHOUSE_TYPE_LABELS[w.warehouseType]}
-                    </p>
+                    {w.name && <p className="text-sm text-muted">{w.name}</p>}
+                    <p className="text-xs text-subtle mt-1">{WAREHOUSE_TYPE_LABELS[w.warehouseType]}</p>
+                    {w.zone && <p className="text-xs text-subtle">Зона: {w.zone}</p>}
                   </div>
+                  <EntityActions onEdit={() => startEdit(w)} onDelete={() => handleDelete(w.id)} />
                 </div>
 
                 <div className="space-y-3">
@@ -191,7 +219,7 @@ export default function WarehousesPage() {
                       <span className="font-medium text-primary">{loadPercentage.toFixed(1)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
-                      <div 
+                      <div
                         className={`h-2 rounded-full transition-all ${
                           loadPercentage > 90 ? 'bg-red-500' :
                           loadPercentage > 70 ? 'bg-yellow-500' :

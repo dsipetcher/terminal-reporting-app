@@ -43,6 +43,32 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/containers/number/:containerNumber - Поиск по номеру
+router.get('/number/:containerNumber', async (req, res) => {
+  try {
+    const container = await prisma.container.findUnique({
+      where: { containerNumber: req.params.containerNumber },
+      include: {
+        vesselCall: {
+          include: {
+            vessel: true,
+          },
+        },
+        warehouse: true,
+      },
+    });
+    
+    if (!container) {
+      return res.status(404).json({ error: 'Container not found' });
+    }
+    
+    res.json(container);
+  } catch (error) {
+    console.error('Error fetching container:', error);
+    res.status(500).json({ error: 'Failed to fetch container' });
+  }
+});
+
 // GET /api/containers/:id - Получить контейнер по ID
 router.get('/:id', async (req, res) => {
   try {
@@ -62,32 +88,6 @@ router.get('/:id', async (req, res) => {
             truck: true,
           },
         },
-      },
-    });
-    
-    if (!container) {
-      return res.status(404).json({ error: 'Container not found' });
-    }
-    
-    res.json(container);
-  } catch (error) {
-    console.error('Error fetching container:', error);
-    res.status(500).json({ error: 'Failed to fetch container' });
-  }
-});
-
-// GET /api/containers/number/:containerNumber - Поиск по номеру
-router.get('/number/:containerNumber', async (req, res) => {
-  try {
-    const container = await prisma.container.findUnique({
-      where: { containerNumber: req.params.containerNumber },
-      include: {
-        vesselCall: {
-          include: {
-            vessel: true,
-          },
-        },
-        warehouse: true,
       },
     });
     

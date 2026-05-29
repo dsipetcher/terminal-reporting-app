@@ -134,6 +134,37 @@ export const TRUCK_VISIT_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Отменен',
 };
 
+const ISO6346_LETTER_VALUES = [
+  10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35, 36, 37, 38,
+];
+
+export function validateContainerNumber(number: string): boolean {
+  const normalized = number.toUpperCase().trim();
+  if (!/^[A-Z]{4}\d{7}$/.test(normalized)) {
+    return false;
+  }
+
+  let sum = 0;
+  for (let i = 0; i < 10; i++) {
+    const char = normalized[i];
+    const value = char >= 'A' && char <= 'Z'
+      ? ISO6346_LETTER_VALUES[char.charCodeAt(0) - 65]
+      : parseInt(char, 10);
+    sum += value * Math.pow(2, i);
+  }
+
+  const checkDigit = sum % 11;
+  const expected = checkDigit === 10 ? 0 : checkDigit;
+  return parseInt(normalized[10], 10) === expected;
+}
+
+export const CUSTOMS_STATUS_LABELS: Record<string, string> = {
+  CLEARED: 'Выпущен',
+  PENDING: 'На таможне',
+  HELD: 'Задержан',
+  INSPECTION: 'Досмотр',
+};
+
 // Цвета для статусов
 export const STATUS_COLORS: Record<string, string> = {
   EXPECTED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',

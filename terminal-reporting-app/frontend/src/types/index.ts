@@ -269,3 +269,8 @@ export interface CreateUserRequest {
   password: string;
   role: UserRole;
 }
+
+export interface UpdateUserRequest {
+  password?: string;
+  role?: UserRole;
+}

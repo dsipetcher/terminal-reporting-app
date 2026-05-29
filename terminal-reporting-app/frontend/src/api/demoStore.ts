@@ -3,6 +3,7 @@ import type {
   Berth,
   Container,
   CreateUserRequest,
+  UpdateUserRequest,
   DashboardStats,
   Truck,
   TruckVisit,
@@ -576,6 +577,18 @@ export const demoAuthApi = {
 
     demoUsers.push(user);
     return simulateNetwork(user);
+  },
+  updateUser: async (id: number, data: UpdateUserRequest): Promise<User> => {
+    const index = demoUsers.findIndex((item) => item.id === id);
+    if (index === -1) {
+      throw new Error('User not found');
+    }
+    demoUsers[index] = {
+      ...demoUsers[index],
+      ...(data.role ? { role: data.role } : {}),
+      updatedAt: now,
+    };
+    return simulateNetwork(demoUsers[index]);
   },
   deleteUser: async (id: number): Promise<void> => {
     const index = demoUsers.findIndex((item) => item.id === id);

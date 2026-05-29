@@ -22,6 +22,7 @@ import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute';
 
 import DashboardPage from './pages/DashboardPage';
 import VesselCallsPage from './pages/VesselCallsPage';
+import VesselsPage from './pages/VesselsPage';
 import BerthsPage from './pages/BerthsPage';
 import ContainersPage from './pages/ContainersPage';
 import TrucksPage from './pages/TrucksPage';
@@ -68,6 +69,14 @@ function AppLayout() {
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Морской фронт
           </div>
+          <Link
+            to="/vessels"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Ship className="w-5 h-5" />
+            <span className="font-medium">Суда</span>
+          </Link>
           <Link
             to="/vessel-calls"
             className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
@@ -203,6 +212,7 @@ function AppLayout() {
         <main className="p-6 bg-gray-50 dark:bg-slate-950 min-h-[calc(100vh-73px)]">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
+            <Route path="/vessels" element={<VesselsPage />} />
             <Route path="/vessel-calls" element={<VesselCallsPage />} />
             <Route path="/berths" element={<BerthsPage />} />
             <Route path="/containers" element={<ContainersPage />} />

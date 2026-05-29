@@ -1,8 +1,8 @@
 ﻿import { useEffect, useState } from 'react';
-import { UserPlus, Trash2 } from 'lucide-react';
+import { UserPlus, Trash2, Pencil } from 'lucide-react';
 import { authApi } from '../api';
 import { useAuth } from '../context/AuthContext';
-import type { CreateUserRequest, User, UserRole } from '../types';
+import type { CreateUserRequest, UpdateUserRequest, User, UserRole } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -17,8 +17,13 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<CreateUserRequest>({
     username: '',
+    password: '',
+    role: 'USER',
+  });
+  const [editForm, setEditForm] = useState<UpdateUserRequest>({
     password: '',
     role: 'USER',
   });
@@ -39,17 +44,27 @@ export default function UsersPage() {
     loadUsers();
   }, []);
 
+  const resetForm = () => {
+    setForm({ username: '', password: '', role: 'USER' });
+    setEditingId(null);
+    setEditForm({ password: '', role: 'USER' });
+    setShowForm(false);
+  };
+
+  const startEdit = (user: User) => {
+    setEditingId(user.id);
+    setEditForm({ password: '', role: user.role });
+    setShowForm(true);
+  };
+
   const handleCreate = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (!form.username || !form.password) {
-      return;
-    }
+    if (!form.username || !form.password) return;
 
     try {
       await authApi.createUser(form);
-      setForm({ username: '', password: '', role: 'USER' });
-      setShowForm(false);
+      resetForm();
       loadUsers();
     } catch (error) {
       console.error('Failed to create user:', error);
@@ -57,10 +72,25 @@ export default function UsersPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Удалить пользователя?')) {
-      return;
+  const handleUpdate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingId) return;
+
+    const payload: UpdateUserRequest = { role: editForm.role };
+    if (editForm.password) payload.password = editForm.password;
+
+    try {
+      await authApi.updateUser(editingId, payload);
+      resetForm();
+      loadUsers();
+    } catch (error) {
+      console.error('Failed to update user:', error);
+      alert('Не удалось обновить пользователя');
     }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Удалить пользователя?')) return;
 
     try {
       await authApi.deleteUser(id);
@@ -82,7 +112,10 @@ export default function UsersPage() {
         subtitle="Управление учётными записями и ролями"
         action={
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm && !editingId) resetForm();
+              else { setEditingId(null); setForm({ username: '', password: '', role: 'USER' }); setShowForm(!showForm); }
+            }}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
           >
             <UserPlus className="w-4 h-4" />
@@ -91,39 +124,32 @@ export default function UsersPage() {
         }
       />
 
-      {showForm && (
-        <Card className="mb-6">
+      {showForm && !editingId && (
+        <Card className="mb-6" title="Новый пользователь">
           <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input
-              type="text"
-              placeholder="Логин"
-              value={form.username}
-              onChange={(event) => setForm({ ...form, username: event.target.value })}
-              className="input-field"
-              required
-            />
-            <input
-              type="password"
-              placeholder="Пароль"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              className="input-field"
-              required
-            />
-            <select
-              value={form.role}
-              onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })}
-              className="input-field"
-            >
+            <input type="text" placeholder="Логин" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="input-field" required />
+            <input type="password" placeholder="Пароль" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field" required />
+            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })} className="input-field">
               <option value="USER">Пользователь</option>
               <option value="ADMIN">Администратор</option>
             </select>
-            <button
-              type="submit"
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
-            >
-              Сохранить
-            </button>
+            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Сохранить</button>
+          </form>
+        </Card>
+      )}
+
+      {showForm && editingId && (
+        <Card className="mb-6" title="Редактирование пользователя">
+          <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="password" placeholder="Новый пароль (оставьте пустым, чтобы не менять)" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className="input-field" />
+            <select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })} className="input-field">
+              <option value="USER">Пользователь</option>
+              <option value="ADMIN">Администратор</option>
+            </select>
+            <div className="flex gap-2">
+              <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Сохранить</button>
+              <button type="button" onClick={resetForm} className="bg-gray-200 dark:bg-slate-700 px-4 py-2 rounded-lg">Отмена</button>
+            </div>
           </form>
         </Card>
       )}
@@ -145,22 +171,21 @@ export default function UsersPage() {
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">{user.id}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{user.username}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
-                    {ROLE_LABELS[user.role]}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-subtle">
-                    {new Date(user.createdAt).toLocaleDateString('ru-RU')}
-                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">{ROLE_LABELS[user.role]}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-subtle">{new Date(user.createdAt).toLocaleDateString('ru-RU')}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    {currentUser?.id !== user.id && (
-                      <button
-                        onClick={() => handleDelete(user.id)}
-                        className="inline-flex items-center gap-1 text-red-400 hover:text-red-800"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Удалить
+                    <div className="flex justify-end gap-3">
+                      <button onClick={() => startEdit(user)} className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-700">
+                        <Pencil className="w-4 h-4" />
+                        Изменить
                       </button>
-                    )}
+                      {currentUser?.id !== user.id && (
+                        <button onClick={() => handleDelete(user.id)} className="inline-flex items-center gap-1 text-red-400 hover:text-red-800">
+                          <Trash2 className="w-4 h-4" />
+                          Удалить
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
