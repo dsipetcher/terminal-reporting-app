@@ -1,52 +1,45 @@
 /**
  * Стандартный маршрут экспортного терминала (уголь / нефть):
- * поставщик → суша (ЖД/авто) → склад → погрузка на судно → порт назначения
+ * поставщик (ж/д отгрузка) → вагоны → склад → погрузка на судно → порт назначения
  */
 export const EXPORT_ROUTE_STAGE_TEMPLATE = [
   {
     sequence: 1,
     stageType: 'SUPPLIER',
     locationCode: 'SUPPLIER',
-    locationName: 'Поставщик (шахта / НПЗ)',
-    transportMode: 'ROAD',
+    locationName: 'Поставщик (ж/д отгрузка)',
+    transportMode: 'RAIL',
   },
   {
     sequence: 2,
     stageType: 'RAIL_STATION',
     locationCode: 'RZD-FRONT',
-    locationName: 'Ж/д фронт терминала',
+    locationName: 'Вагоны',
     transportMode: 'RAIL',
   },
   {
     sequence: 3,
-    stageType: 'ROAD_GATE',
-    locationCode: 'AUTO-GATE',
-    locationName: 'Автовесовая, въезд грузовиков',
-    transportMode: 'ROAD',
-  },
-  {
-    sequence: 4,
     stageType: 'WAREHOUSE',
     locationCode: 'WH-STORAGE',
     locationName: 'Склад терминала (разгрузка)',
     transportMode: 'WAREHOUSE',
   },
   {
-    sequence: 5,
+    sequence: 4,
     stageType: 'BERTH',
     locationCode: 'BERTH-LOAD',
     locationName: 'Причал погрузки на судно',
     transportMode: 'SEA',
   },
   {
-    sequence: 6,
+    sequence: 5,
     stageType: 'SHIP',
     locationCode: 'VESSEL',
     locationName: 'Судно (рейс)',
     transportMode: 'SEA',
   },
   {
-    sequence: 7,
+    sequence: 6,
     stageType: 'PORT',
     locationCode: 'PORT-DEST',
     locationName: 'Порт назначения груза',
@@ -72,28 +65,20 @@ export function buildExportRouteStages(
       sequence: 1,
       stageType: 'SUPPLIER',
       locationCode: o.supplierCode ?? 'SUPPLIER',
-      locationName: o.supplierName ?? 'Поставщик (шахта / НПЗ)',
-      transportMode: 'ROAD',
+      locationName: o.supplierName ?? 'Поставщик (ж/д отгрузка)',
+      transportMode: 'RAIL',
       status: 'COMPLETED',
     },
     {
       sequence: 2,
       stageType: 'RAIL_STATION',
       locationCode: 'RZD-FRONT',
-      locationName: o.railName ?? 'Ж/д фронт терминала',
+      locationName: o.railName ?? 'Вагоны',
       transportMode: 'RAIL',
       status: 'COMPLETED',
     },
     {
       sequence: 3,
-      stageType: 'ROAD_GATE',
-      locationCode: 'AUTO-GATE',
-      locationName: 'Автовесовая терминала',
-      transportMode: 'ROAD',
-      status: 'COMPLETED',
-    },
-    {
-      sequence: 4,
       stageType: 'WAREHOUSE',
       locationCode: 'WH-STORAGE',
       locationName: o.warehouseName ?? 'Склад терминала',
@@ -101,7 +86,7 @@ export function buildExportRouteStages(
       status: 'CURRENT',
     },
     {
-      sequence: 5,
+      sequence: 4,
       stageType: 'BERTH',
       locationCode: 'BERTH-LOAD',
       locationName: o.berthName ?? 'Причал погрузки',
@@ -109,7 +94,7 @@ export function buildExportRouteStages(
       status: 'PENDING',
     },
     {
-      sequence: 6,
+      sequence: 5,
       stageType: 'SHIP',
       locationCode: 'VESSEL',
       locationName: o.shipName ?? 'Судно (рейс)',
@@ -117,7 +102,7 @@ export function buildExportRouteStages(
       status: 'PENDING',
     },
     {
-      sequence: 7,
+      sequence: 6,
       stageType: 'PORT',
       locationCode: o.destPortCode ?? 'PORT-DEST',
       locationName: o.destPortName ?? 'Порт назначения',

@@ -3,6 +3,8 @@ import prisma from '../lib/prisma';
 import { logInfoFlow } from '../lib/ils';
 import { buildExportRouteStages } from '../lib/exportRouteStages';
 import { cargoStatusFromStageType } from '../lib/cargoStatusFromStage';
+import { syncTransportWithCargoStage } from '../lib/syncTransportWithCargoStage';
+import { releaseTransportAfterDelivery } from '../lib/transportLifecycle';
 
 const router = express.Router();
 
@@ -208,6 +210,15 @@ router.post('/:id/trackings', async (req, res) => {
       });
     }
 
+    if (firstStage) {
+      const initialCargoStatus = cargoStatusFromStageType(firstStage.stageType);
+      await prisma.container.update({
+        where: { id: Number(containerId) },
+        data: { status: initialCargoStatus },
+      });
+      await syncTransportWithCargoStage(prisma, Number(containerId), firstStage.stageType);
+    }
+
     await logInfoFlow({
       ilsFunction: 'CONTROL',
       eventType: 'CREATE',
@@ -262,6 +273,9 @@ router.patch('/trackings/:trackingId/advance', async (req, res) => {
         data: { status: 'DELIVERED' },
       });
 
+      await syncTransportWithCargoStage(prisma, tracking.containerId, 'DELIVERED');
+      await releaseTransportAfterDelivery(prisma, tracking.containerId);
+
       const allDelivered = await prisma.cargoTracking.count({
         where: { routeId: tracking.routeId, status: { not: 'DELIVERED' } },
       });
@@ -293,7 +307,7 @@ router.patch('/trackings/:trackingId/advance', async (req, res) => {
 
     await prisma.routeStage.update({
       where: { id: nextStage.id },
-      data: { status: 'CURRENT', actualAt: newStage.actualAt ?? new Date() },
+      data: { status: 'CURRENT', actualAt: nextStage.actualAt ?? new Date() },
     });
 
     const cargoStatus = cargoStatusFromStageType(nextStage.stageType);
@@ -324,6 +338,8 @@ router.patch('/trackings/:trackingId/advance', async (req, res) => {
       where: { id: tracking.containerId },
       data: { status: cargoStatus },
     });
+
+    await syncTransportWithCargoStage(prisma, tracking.containerId, nextStage.stageType);
 
     await logInfoFlow({
       ilsFunction: 'CONTROL',

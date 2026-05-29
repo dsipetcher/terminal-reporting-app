@@ -9,7 +9,7 @@ import {
   formatDateTime,
   ILS_FUNCTION_LABELS,
   MATERIAL_FLOW_TYPE_LABELS,
-  TRANSPORT_MODE_LABELS,
+  getTransportModeLabel,
 } from '../utils';
 
 export default function FlowsPage() {
@@ -138,7 +138,7 @@ export default function FlowsPage() {
                         {flow.container?.containerNumber ?? '—'}
                       </td>
                       <td className="py-3 pr-4">{MATERIAL_FLOW_TYPE_LABELS[flow.flowType]}</td>
-                      <td className="py-3 pr-4">{TRANSPORT_MODE_LABELS[flow.transportMode]}</td>
+                      <td className="py-3 pr-4">{getTransportModeLabel(flow.transportMode)}</td>
                       <td className="py-3 pr-4 text-muted">
                         {flow.fromLocation || '—'} → {flow.toLocation || '—'}
                       </td>

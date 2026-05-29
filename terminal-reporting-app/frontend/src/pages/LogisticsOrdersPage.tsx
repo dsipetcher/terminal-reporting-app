@@ -6,10 +6,14 @@ import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { StatusBadge } from '../components/StatusBadge';
 import { EntityActions } from '../components/EntityActions';
+import { OrderDocumentsPanel } from '../components/logistics/OrderDocumentsPanel';
+import { useEntityHighlight } from '../hooks/useEntityHighlight';
+import { entityDomId } from '../lib/entityLinks';
 import {
   MANAGEMENT_LEVEL_LABELS,
   ORDER_STATUS_LABELS,
   ORDER_TYPE_LABELS,
+  formatPortCode,
   toDateTimeLocal,
   fromDateTimeLocal,
 } from '../utils';
@@ -39,7 +43,10 @@ export default function LogisticsOrdersPage() {
   const [filterLevel, setFilterLevel] = useState('ALL');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [documentsOrder, setDocumentsOrder] = useState<LogisticsOrder | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  const { highlightClass } = useEntityHighlight(orders.map((o) => o.id));
 
   const load = async () => {
     try {
@@ -138,7 +145,7 @@ export default function LogisticsOrdersPage() {
     <div>
       <PageHeader
         title="Логистические заказы"
-        subtitle="FR-07: заказы ИЛС с уровнями управления и привязкой к партиям и маршрутам"
+        subtitle="Заказы ИЛС с уровнями управления и привязкой к партиям и маршрутам"
         action={
           <button
             onClick={() => setShowForm(true)}
@@ -282,24 +289,37 @@ export default function LogisticsOrdersPage() {
                   <th className="py-2 pr-4">Контрагент</th>
                   <th className="py-2 pr-4">Маршрут</th>
                   <th className="py-2 pr-4">Статус</th>
+                  <th className="py-2 pr-4">Документы</th>
                   <th className="py-2">Действия</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-default hover-surface">
+                  <tr
+                    key={order.id}
+                    id={entityDomId(order.id)}
+                    className={`border-b border-default hover-surface ${highlightClass(order.id)}`}
+                  >
                     <td className="py-3 pr-4 font-medium">{order.orderNumber}</td>
                     <td className="py-3 pr-4">{ORDER_TYPE_LABELS[order.orderType]}</td>
                     <td className="py-3 pr-4">{MANAGEMENT_LEVEL_LABELS[order.managementLevel]}</td>
                     <td className="py-3 pr-4">{order.counterparty?.name ?? '—'}</td>
                     <td className="py-3 pr-4 text-muted">
-                      {order.origin || '—'} → {order.destination || '—'}
+                      {formatPortCode(order.origin)} → {formatPortCode(order.destination)}
                     </td>
                     <td className="py-3 pr-4">
                       <StatusBadge status={order.status} label={ORDER_STATUS_LABELS[order.status]} />
                     </td>
+                    <td className="py-3 pr-4 text-muted">
+                      {order._count?.documents ?? 0}
+                    </td>
                     <td className="py-3">
-                      <EntityActions onEdit={() => startEdit(order)} onDelete={() => handleDelete(order.id)} />
+                      <EntityActions
+                        onEdit={() => startEdit(order)}
+                        onDelete={() => handleDelete(order.id)}
+                        onDocuments={() => setDocumentsOrder(order)}
+                        documentsCount={order._count?.documents}
+                      />
                     </td>
                   </tr>
                 ))}
@@ -308,6 +328,16 @@ export default function LogisticsOrdersPage() {
           </div>
         )}
       </Card>
+
+      {documentsOrder && (
+        <OrderDocumentsPanel
+          order={documentsOrder}
+          onClose={() => {
+            setDocumentsOrder(null);
+            load();
+          }}
+        />
+      )}
     </div>
   );
 }

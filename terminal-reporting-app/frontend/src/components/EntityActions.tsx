@@ -1,16 +1,39 @@
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Paperclip } from 'lucide-react';
 
 interface EntityActionsProps {
   onEdit?: () => void;
   onDelete?: () => void;
+  onDocuments?: () => void;
+  documentsCount?: number;
   className?: string;
 }
 
-export function EntityActions({ onEdit, onDelete, className = '' }: EntityActionsProps) {
-  if (!onEdit && !onDelete) return null;
+export function EntityActions({
+  onEdit,
+  onDelete,
+  onDocuments,
+  documentsCount,
+  className = '',
+}: EntityActionsProps) {
+  if (!onEdit && !onDelete && !onDocuments) return null;
 
   return (
     <div className={`flex gap-1 ${className}`}>
+      {onDocuments && (
+        <button
+          type="button"
+          onClick={onDocuments}
+          className="relative p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded transition-colors"
+          title="Документы"
+        >
+          <Paperclip className="w-4 h-4" />
+          {documentsCount != null && documentsCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-medium text-white">
+              {documentsCount}
+            </span>
+          )}
+        </button>
+      )}
       {onEdit && (
         <button
           type="button"

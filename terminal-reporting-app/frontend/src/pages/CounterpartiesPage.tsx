@@ -6,6 +6,8 @@ import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EntityActions } from '../components/EntityActions';
 import { PARTNER_TYPE_LABELS } from '../utils';
+import { useEntityHighlight } from '../hooks/useEntityHighlight';
+import { entityDomId } from '../lib/entityLinks';
 
 const emptyForm = { code: '', name: '', partnerType: 'CLIENT', inn: '', contact: '' };
 
@@ -15,6 +17,8 @@ export default function CounterpartiesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
+
+  const { highlightClass } = useEntityHighlight(items.map((i) => i.id));
 
   const load = async () => {
     try {
@@ -85,7 +89,7 @@ export default function CounterpartiesPage() {
     <div>
       <PageHeader
         title="Контрагенты"
-        subtitle="FR-16: участники логистических цепочек (клиент, перевозчик, агент, ЖД)"
+        subtitle="Участники логистических цепочек (клиент, перевозчик, агент, Ж/д)"
         action={
           <button
             onClick={() => setShowForm(true)}
@@ -159,7 +163,11 @@ export default function CounterpartiesPage() {
             </thead>
             <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="border-b border-default hover-surface">
+                <tr
+                  key={item.id}
+                  id={entityDomId(item.id)}
+                  className={`border-b border-default hover-surface ${highlightClass(item.id)}`}
+                >
                   <td className="py-3 pr-4 font-mono">{item.code}</td>
                   <td className="py-3 pr-4">{item.name}</td>
                   <td className="py-3 pr-4">{PARTNER_TYPE_LABELS[item.partnerType]}</td>

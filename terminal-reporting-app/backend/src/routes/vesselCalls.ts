@@ -104,18 +104,18 @@ router.patch('/:id/status', async (req, res) => {
     const { status, berthId } = req.body;
     const updateData: any = { status };
 
-    if (status === 'BERTHED') {
-      if (!berthId) {
-        return res.status(400).json({ error: 'Berth is required when status is BERTHED' });
-      }
+    const normalizedStatus = status === 'EXPECTED' ? 'EN_ROUTE' : status === 'BERTHED' ? 'ARRIVED' : status === 'IN_OPERATION' ? 'UNLOADING' : status;
+    updateData.status = normalizedStatus;
+
+    if (normalizedStatus === 'ARRIVED' && berthId) {
       updateData.berthId = Number(berthId);
     }
 
     // Автоматически устанавливать фактическое время
-    if (status === 'ARRIVED' && !req.body.ata) {
+    if (normalizedStatus === 'ARRIVED' && !req.body.ata) {
       updateData.ata = new Date();
     }
-    if (status === 'DEPARTED' && !req.body.atd) {
+    if (normalizedStatus === 'DEPARTED' && !req.body.atd) {
       updateData.atd = new Date();
     }
 

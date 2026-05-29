@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
         vesselCalls: {
           where: {
             status: {
-              in: ['BERTHED', 'IN_OPERATION'],
+              in: ['ARRIVED', 'UNLOADING', 'BERTHED', 'IN_OPERATION'],
             },
           },
           include: {

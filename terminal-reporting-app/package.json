@@ -1,8 +1,18 @@
 {
-  "dependencies": {
-    "react-router-dom": "^7.6.0"
+  "name": "terminal-reporting-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ИЛС угольно-нефтяного терминала — полный локальный запуск",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "db:setup": "npm run db:setup --prefix backend",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "cross-env VITE_DEMO_MODE=false VITE_API_URL=http://localhost:3001/api npm run dev --prefix frontend",
+    "prestart": "npm run install:all && npm run db:setup",
+    "start": "concurrently -k -n backend,frontend -c blue,green \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "devDependencies": {
-    "@types/react-router-dom": "^5.3.3"
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3"
   }
 }

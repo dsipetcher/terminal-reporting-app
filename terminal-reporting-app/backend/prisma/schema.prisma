@@ -30,6 +30,24 @@ model Warehouse {
 // ЖЕЛЕЗНОДОРОЖНЫЙ ТРАНСПОРТ
 // ============================================
 
+model TrainConsist {
+  id            Int       @id @default(autoincrement())
+  trainNumber   String
+  origin        String?
+  destination   String?
+  track         String?
+  direction     String    @default("INBOUND") // INBOUND, OUTBOUND
+  arrivalAt     DateTime
+  formedAt      DateTime?
+  departureAt   DateTime?
+  status        String    @default("EN_ROUTE") // EN_ROUTE, ARRIVED, UNLOADING, IN_PARK, FORMING, DEPARTED
+
+  wagons        Wagon[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
 model Wagon {
   id              Int       @id @default(autoincrement())
   number          String    @unique
@@ -45,8 +63,11 @@ model Wagon {
   arrivalAt       DateTime
   departureAt     DateTime?
   
-  status          String    @default("EXPECTED") // EXPECTED, ARRIVED, UNLOADING, LOADING, DEPARTED
-  
+  status          String    @default("EN_ROUTE") // mirrors TrainConsist status while active
+
+  trainConsist    TrainConsist? @relation(fields: [trainConsistId], references: [id])
+  trainConsistId  Int?
+
   container       Container? @relation(fields: [containerId], references: [id])
   containerId     Int?
   
@@ -92,7 +113,7 @@ model VesselCall {
   berth         Berth?        @relation(fields: [berthId], references: [id])
   berthId       Int?
   
-  status        String        @default("EXPECTED") // EXPECTED, ARRIVED, BERTHED, IN_OPERATION, DEPARTED, CANCELLED
+  status        String        @default("EN_ROUTE") // EN_ROUTE, ARRIVED, UNLOADING, DEPARTED, CANCELLED
   
   agent         String?
   purpose       String?
@@ -153,7 +174,6 @@ model Container {
   location        String?
   
   wagons          Wagon[]
-  truckVisits     TruckVisit[]
   materialFlows   MaterialFlow[]
   
   portOfLoading   String?
@@ -168,45 +188,6 @@ model Container {
   
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-}
-
-// ============================================
-// АВТОТРАНСПОРТ
-// ============================================
-
-model Truck {
-  id              Int           @id @default(autoincrement())
-  licensePlate    String        @unique
-  truckType       String        // TRUCK, CONTAINER_TRUCK, DUMP_TRUCK, REFRIGERATOR
-  carrier         String
-  driverName      String?
-  driverDocument  String?
-  
-  visits          TruckVisit[]
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-}
-
-model TruckVisit {
-  id              Int           @id @default(autoincrement())
-  truck           Truck         @relation(fields: [truckId], references: [id])
-  truckId         Int
-  
-  timeSlot        DateTime
-  timeIn          DateTime?
-  timeOut         DateTime?
-  
-  purpose         String
-  gateNumber      String?
-  
-  status          String        @default("SCHEDULED") // SCHEDULED, ARRIVED, IN_PROGRESS, COMPLETED, CANCELLED
-  
-  container       Container?    @relation(fields: [containerId], references: [id])
-  containerId     Int?
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
 }
 
 // ============================================
@@ -287,8 +268,25 @@ model LogisticsOrder {
   materialFlows    MaterialFlow[]
   infoEvents       InfoFlowEvent[]
   routes           LogisticsRoute[]
+  documents        LogisticsOrderDocument[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+}
+
+// Документ, прикреплённый к логистическому заказу
+model LogisticsOrderDocument {
+  id           Int            @id @default(autoincrement())
+  order        LogisticsOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId      Int
+  fileName     String
+  storedName   String
+  mimeType     String?
+  fileSize     Int
+  documentType String?        // CONTRACT, INVOICE, WAYBILL, CERTIFICATE, CUSTOMS, OTHER
+  description  String?
+  uploadedAt   DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 }
 
 // Логистический маршрут доставки груза
@@ -300,7 +298,7 @@ model LogisticsRoute {
   orderId       Int?
   origin        String
   destination   String           // порт назначения груза
-  routeKind     String           @default("EXPORT") // EXPORT: поставщик → суша → склад → судно → порт
+  routeKind     String           @default("EXPORT") // EXPORT: поставщик → ж/д → склад → судно → порт
   status        String           @default("PLANNED") // PLANNED, ACTIVE, COMPLETED, CANCELLED
   stages        RouteStage[]
   trackings     CargoTracking[]
@@ -314,10 +312,10 @@ model RouteStage {
   route           LogisticsRoute   @relation(fields: [routeId], references: [id], onDelete: Cascade)
   routeId         Int
   sequence        Int
-  stageType       String           // SUPPLIER, RAIL_STATION, ROAD_GATE, WAREHOUSE, BERTH, SHIP, PORT
+  stageType       String           // SUPPLIER, RAIL_STATION, WAREHOUSE, BERTH, SHIP, PORT
   locationCode    String
   locationName    String
-  transportMode   String?          // SEA, RAIL, ROAD, WAREHOUSE
+  transportMode   String?          // SEA, RAIL, WAREHOUSE
   plannedAt       DateTime?
   actualAt        DateTime?
   status          String           @default("PENDING") // PENDING, CURRENT, COMPLETED, SKIPPED
@@ -364,7 +362,7 @@ model MaterialFlow {
   order         LogisticsOrder? @relation(fields: [orderId], references: [id])
   orderId       Int?
   flowType      String          // ARRIVAL, DEPARTURE, INTERNAL_TRANSFER, STORAGE
-  transportMode String          // SEA, RAIL, ROAD, WAREHOUSE
+  transportMode String          // SEA, RAIL, WAREHOUSE
   quantity      Float?
   unit          String?         // TON, M3
   fromLocation  String?

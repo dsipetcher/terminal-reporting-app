@@ -1,22 +1,56 @@
 import type { CargoProfile } from '../../lib/buildCargoProfile';
 import { CargoAccordionSection } from './CargoAccordionSection';
 import { RouteTimeline } from './RouteTimeline';
+import { EntityNavLink } from '../EntityNavLink';
+import { entityLinks } from '../../lib/entityLinks';
 import {
   MapPin,
   Train,
-  Truck,
   Warehouse,
   Ship,
   Route,
   ArrowLeftRight,
 } from 'lucide-react';
+import {
+  FIELD_LABELS,
+  ORDER_STATUS_LABELS,
+  MATERIAL_FLOW_TYPE_LABELS,
+  formatPortCode,
+  formatWarehouseLabel,
+  formatBerthLabel,
+} from '../../utils';
+import type { RouteStage } from '../../types';
 
-function Field({ label, value }: { label: string; value?: string | null }) {
+function Field({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value?: string | null;
+  href?: string;
+}) {
   if (!value) return null;
   return (
     <div className="flex flex-col sm:flex-row sm:gap-2 py-1.5 border-b border-default last:border-0">
       <span className="text-xs text-muted sm:w-40 shrink-0">{label}</span>
-      <span className="text-sm text-primary">{value}</span>
+      {href ? (
+        <EntityNavLink to={href} className="text-sm font-medium">
+          {value}
+        </EntityNavLink>
+      ) : (
+        <span className="text-sm text-primary">{value}</span>
+      )}
+    </div>
+  );
+}
+
+function SectionFooterLink({ to, label }: { to: string; label: string }) {
+  return (
+    <div className="mt-3 pt-3 border-t border-default">
+      <EntityNavLink to={to} className="text-sm font-medium">
+        {label}
+      </EntityNavLink>
     </div>
   );
 }
@@ -25,21 +59,16 @@ export function CargoDetailPanel({
   profile,
   onAdvance,
   advancing,
-  onAddToRoute,
-  addRouteId,
-  onAddRouteIdChange,
+  onOpenWizard,
 }: {
   profile: CargoProfile;
   onAdvance?: (trackingId: number) => void;
   advancing?: number | null;
-  onAddToRoute?: () => void;
-  addRouteId?: string;
-  onAddRouteIdChange?: (id: string) => void;
+  onOpenWizard?: () => void;
 }) {
   const {
     container,
     wagons,
-    truckVisits,
     vesselCall,
     warehouse,
     order,
@@ -47,12 +76,10 @@ export function CargoDetailPanel({
     infoEvents,
     primaryTracking,
     stages,
-    routes,
   } = profile;
 
   const supplierStage = stages.find((s) => s.stageType === 'SUPPLIER');
   const railStage = stages.find((s) => s.stageType === 'RAIL_STATION');
-  const roadStage = stages.find((s) => s.stageType === 'ROAD_GATE');
   const warehouseStage = stages.find((s) => s.stageType === 'WAREHOUSE');
   const berthStage = stages.find((s) => s.stageType === 'BERTH');
   const shipStage = stages.find((s) => s.stageType === 'SHIP');
@@ -66,14 +93,15 @@ export function CargoDetailPanel({
   const originSummary =
     container.supplierName || order?.origin || supplierStage?.locationName || 'Не указано';
 
-  const wagonSummary = wagons.length ? wagons.map((w) => w.number).join(', ') : 'Не привязан';
+  const isDelivered =
+    container.status === 'DELIVERED' || primaryTracking?.status === 'DELIVERED';
 
-  const truckSummary = truckVisits.length
-    ? truckVisits.map((v) => v.truck?.licensePlate ?? `#${v.id}`).join(', ')
-    : 'Не привязан';
+  const wagonSummary = wagons.length
+    ? wagons.map((w) => w.number).join(', ')
+    : railStage?.locationName ?? (isDelivered ? 'Завершено' : 'Не привязан');
 
   const warehouseSummary = warehouse
-    ? `${warehouse.number}${container.location ? ` / ${container.location}` : ''}`
+    ? `${formatWarehouseLabel(warehouse)}${container.location ? ` / ${container.location}` : ''}`
     : warehouseStage?.locationName ?? 'Не назначен';
 
   const vesselSummary = vesselCall
@@ -81,7 +109,43 @@ export function CargoDetailPanel({
     : shipStage?.locationName ?? 'Не назначено';
 
   const destinationSummary =
-    container.portOfDischarge || portStage?.locationName || order?.destination || '—';
+    formatPortCode(container.portOfDischarge) ||
+    portStage?.locationName ||
+    formatPortCode(order?.destination) ||
+    '—';
+
+  const supplierHref = order?.counterpartyId
+    ? entityLinks.counterparty(order.counterpartyId)
+    : entityLinks.counterparties();
+
+  const getStageHref = (stage: RouteStage): string | undefined => {
+    switch (stage.stageType) {
+      case 'SUPPLIER':
+        return order?.id
+          ? entityLinks.logisticsOrder(order.id)
+          : order?.counterpartyId
+            ? entityLinks.counterparty(order.counterpartyId)
+            : entityLinks.counterparties();
+      case 'RAIL_STATION':
+        return wagons[0]?.trainConsistId
+          ? entityLinks.trainConsist(wagons[0].trainConsistId)
+          : wagons[0]
+            ? entityLinks.wagon(wagons[0].id)
+            : entityLinks.wagons();
+      case 'WAREHOUSE':
+        return warehouse ? entityLinks.warehouse(warehouse.id) : entityLinks.warehouses();
+      case 'BERTH':
+        return vesselCall?.berth?.id
+          ? entityLinks.berth(vesselCall.berth.id)
+          : entityLinks.berths();
+      case 'SHIP':
+        return vesselCall ? entityLinks.vesselCall(vesselCall.id) : undefined;
+      case 'PORT':
+        return container.portOfDischarge ? entityLinks.port(container.portOfDischarge) : undefined;
+      default:
+        return undefined;
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -92,7 +156,9 @@ export function CargoDetailPanel({
             stages={stages}
             currentStageId={primaryTracking?.currentStageId}
             compact
+            getStageHref={getStageHref}
           />
+          <p className="text-[10px] text-subtle mt-1.5">Нажмите на этап, чтобы перейти к сущности</p>
         </div>
       )}
 
@@ -104,39 +170,67 @@ export function CargoDetailPanel({
         defaultOpen={isSectionCurrent('SUPPLIER') || !primaryTracking}
         highlight={isSectionCurrent('SUPPLIER')}
       >
-        <Field label="Поставщик" value={container.supplierName ?? order?.supplierName} />
+        <Field
+          label="Поставщик"
+          value={container.supplierName ?? order?.supplierName}
+          href={supplierHref}
+        />
         <Field label="Место отгрузки" value={supplierStage?.locationName ?? order?.origin} />
-        <Field label="Порт погрузки" value={container.portOfLoading} />
-        <Field label="Порт назначения" value={container.portOfDischarge ?? order?.destination} />
+        <Field
+          label="Порт погрузки"
+          value={formatPortCode(container.portOfLoading)}
+          href={container.portOfLoading ? entityLinks.port(container.portOfLoading) : undefined}
+        />
+        <Field
+          label="Порт назначения"
+          value={formatPortCode(container.portOfDischarge ?? order?.destination)}
+          href={
+            container.portOfDischarge ? entityLinks.port(container.portOfDischarge) : undefined
+          }
+        />
         <Field label="Коносамент" value={container.blNumber} />
         {order && (
-          <Field label="Логистический заказ" value={`${order.orderNumber} · ${order.status}`} />
+          <Field
+            label="Логистический заказ"
+            value={`${order.orderNumber} · ${ORDER_STATUS_LABELS[order.status] ?? order.status}`}
+            href={entityLinks.logisticsOrder(order.id)}
+          />
         )}
         {primaryTracking?.route && (
           <Field
             label="Маршрут"
-            value={`${primaryTracking.route.routeNumber}: ${primaryTracking.route.origin} → ${primaryTracking.route.destination}`}
+            value={`${primaryTracking.route.routeNumber}: ${formatPortCode(primaryTracking.route.origin)} → ${formatPortCode(primaryTracking.route.destination)}`}
+          />
+        )}
+        {order && (
+          <SectionFooterLink
+            to={entityLinks.logisticsOrder(order.id)}
+            label={`Открыть заказ ${order.orderNumber}`}
           />
         )}
       </CargoAccordionSection>
 
       <CargoAccordionSection
         id="rail"
-        title="Ж/д доставка в порт"
+        title="Вагоны"
         icon={Train}
         summary={wagonSummary}
         defaultOpen={isSectionCurrent('RAIL_STATION')}
         highlight={isSectionCurrent('RAIL_STATION')}
       >
         {wagons.length === 0 ? (
-          <p className="text-sm text-subtle">Вагон не привязан к партии</p>
+          isDelivered && railStage ? (
+            <Field label="Ж/д этап (архив)" value={railStage.locationName} />
+          ) : (
+            <p className="text-sm text-subtle">Вагон не привязан к партии</p>
+          )
         ) : (
           wagons.map((w) => (
             <div
               key={w.id}
               className="mb-3 last:mb-0 pb-3 last:pb-0 border-b border-default last:border-0"
             >
-              <Field label="№ вагона" value={w.number} />
+              <Field label="№ вагона" value={w.number} href={entityLinks.wagon(w.id)} />
               <Field label="Поезд" value={w.trainNumber} />
               <Field label="Путь" value={w.track ?? railStage?.locationName} />
               <Field label="Прибытие" value={formatDate(w.arrivalAt)} />
@@ -144,32 +238,15 @@ export function CargoDetailPanel({
                 label="План (этап)"
                 value={formatDate(railStage?.plannedAt ?? railStage?.actualAt)}
               />
+              <SectionFooterLink
+                to={entityLinks.wagon(w.id)}
+                label={`Открыть вагон №${w.number}`}
+              />
             </div>
           ))
         )}
-      </CargoAccordionSection>
-
-      <CargoAccordionSection
-        id="road"
-        title="Автодоставка на терминал"
-        icon={Truck}
-        summary={truckSummary}
-        defaultOpen={isSectionCurrent('ROAD_GATE')}
-        highlight={isSectionCurrent('ROAD_GATE')}
-      >
-        {truckVisits.length === 0 ? (
-          <p className="text-sm text-subtle">Автотранспорт не привязан</p>
-        ) : (
-          truckVisits.map((v) => (
-            <div key={v.id} className="mb-3 last:mb-0">
-              <Field label="Госномер" value={v.truck?.licensePlate} />
-              <Field label="Перевозчик" value={v.truck?.carrier} />
-              <Field label="Водитель" value={v.truck?.driverName} />
-              <Field label="Ворота / весовая" value={v.gateNumber ?? roadStage?.locationName} />
-              <Field label="Время визита" value={formatDate(v.timeSlot)} />
-              <Field label="Назначение" value={v.purpose} />
-            </div>
-          ))
+        {wagons.length === 0 && !isDelivered && (
+          <SectionFooterLink to={entityLinks.wagons()} label="Перейти к разделу «Вагоны»" />
         )}
       </CargoAccordionSection>
 
@@ -183,7 +260,12 @@ export function CargoDetailPanel({
       >
         <Field
           label="Склад"
-          value={warehouse?.name ?? warehouse?.number ?? warehouseStage?.locationName}
+          value={
+            formatWarehouseLabel(warehouse) !== '—'
+              ? formatWarehouseLabel(warehouse)
+              : warehouseStage?.locationName
+          }
+          href={warehouse ? entityLinks.warehouse(warehouse.id) : entityLinks.warehouses()}
         />
         <Field label="Сектор / ячейка" value={container.location} />
         <Field label="Плановая разгрузка" value={formatDate(warehouseStage?.plannedAt)} />
@@ -204,6 +286,12 @@ export function CargoDetailPanel({
             }
           />
         )}
+        {warehouse && (
+          <SectionFooterLink
+            to={entityLinks.warehouse(warehouse.id)}
+            label={`Открыть ${formatWarehouseLabel(warehouse)}`}
+          />
+        )}
       </CargoAccordionSection>
 
       <CargoAccordionSection
@@ -216,27 +304,62 @@ export function CargoDetailPanel({
       >
         {vesselCall ? (
           <>
-            <Field label="Судно" value={vesselCall.vessel.name} />
-            <Field label="IMO" value={vesselCall.vessel.imoNumber} />
-            <Field label="Рейс" value={vesselCall.voyageNumber} />
+            <Field
+              label="Судно"
+              value={vesselCall.vessel.name}
+              href={entityLinks.vessel(vesselCall.vessel.id)}
+            />
+            <Field label={FIELD_LABELS.IMO} value={vesselCall.vessel.imoNumber} />
+            <Field
+              label="Рейс"
+              value={vesselCall.voyageNumber}
+              href={entityLinks.vesselCall(vesselCall.id)}
+            />
             <Field
               label="Причал"
-              value={vesselCall.berth ? `№${vesselCall.berth.number}` : berthStage?.locationName}
+              value={
+              vesselCall.berth
+                ? formatBerthLabel(vesselCall.berth)
+                : berthStage?.locationName
+            }
+              href={
+                vesselCall.berth?.id ? entityLinks.berth(vesselCall.berth.id) : entityLinks.berths()
+              }
             />
-            <Field label="ETA (прибытие)" value={formatDate(vesselCall.eta)} />
-            <Field label="ETD (отход)" value={formatDate(vesselCall.etd)} />
+            <Field label={FIELD_LABELS.ETA} value={formatDate(vesselCall.eta)} />
+            <Field label={FIELD_LABELS.ETD} value={formatDate(vesselCall.etd)} />
             <Field label="Агент" value={vesselCall.agent} />
             <Field label="Назначение рейса" value={vesselCall.purpose} />
+            <SectionFooterLink
+              to={entityLinks.vesselCall(vesselCall.id)}
+              label={`Открыть судозаход · рейс ${vesselCall.voyageNumber}`}
+            />
+          </>
+        ) : isDelivered && shipStage ? (
+          <>
+            <Field label="Судно (архив)" value={shipStage.locationName} />
+            <Field label="Причал погрузки" value={berthStage?.locationName} />
           </>
         ) : (
           <>
             <Field label="Планируемое судно" value={shipStage?.locationName} />
-            <Field label="Причал погрузки" value={berthStage?.locationName} />
+            <Field
+              label="Причал погрузки"
+              value={berthStage?.locationName}
+              href={entityLinks.berths()}
+            />
             <Field label="План погрузки" value={formatDate(berthStage?.plannedAt)} />
             <p className="text-sm text-subtle mt-2">Судозаход ещё не привязан к партии</p>
+            <SectionFooterLink to={entityLinks.vessels()} label="Перейти к судозаходам" />
           </>
         )}
-        <Field label="Конечный порт" value={portStage?.locationName ?? container.portOfDischarge} />
+        <Field
+          label="Конечный порт"
+          value={portStage?.locationName ?? formatPortCode(container.portOfDischarge)}
+          href={
+            container.portOfDischarge ? entityLinks.port(container.portOfDischarge) : undefined
+          }
+        />
       </CargoAccordionSection>
 
       {primaryTracking && (
@@ -248,7 +371,11 @@ export function CargoDetailPanel({
           defaultOpen
         >
           {stages.length > 0 && (
-            <RouteTimeline stages={stages} currentStageId={primaryTracking.currentStageId} />
+            <RouteTimeline
+              stages={stages}
+              currentStageId={primaryTracking.currentStageId}
+              getStageHref={getStageHref}
+            />
           )}
           {primaryTracking.events && primaryTracking.events.length > 0 && (
             <div className="mt-3">
@@ -275,31 +402,19 @@ export function CargoDetailPanel({
         </CargoAccordionSection>
       )}
 
-      {!primaryTracking && onAddToRoute && routes.length > 0 && (
-        <div className="p-4 border border-dashed border-default rounded-lg">
-          <p className="text-sm text-muted mb-3">Партия не на маршруте отслеживания</p>
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={addRouteId ?? ''}
-              onChange={(e) => onAddRouteIdChange?.(e.target.value)}
-              className="input-field flex-1 min-w-[200px]"
-            >
-              <option value="">Выберите маршрут</option>
-              {routes.map((route) => (
-                <option key={route.id} value={route.id}>
-                  {route.routeNumber} · {route.origin} → {route.destination}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={onAddToRoute}
-              disabled={!addRouteId}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
-            >
-              Поставить на отслеживание
-            </button>
-          </div>
+      {!primaryTracking && onOpenWizard && (
+        <div className="p-5 rounded-xl border-2 border-dashed border-blue-300 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 text-center">
+          <p className="text-sm text-secondary mb-3">
+            Партия ещё не на маршруте отслеживания. Пройдите пошаговый мастер: партия → маршрут →
+            этапы → запуск.
+          </p>
+          <button
+            type="button"
+            onClick={onOpenWizard}
+            className="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+          >
+            Поставить на отслеживание
+          </button>
         </div>
       )}
 
@@ -315,8 +430,9 @@ export function CargoDetailPanel({
               <p className="text-xs font-semibold text-muted uppercase mb-2">Материальные потоки</p>
               {materialFlows.map((f) => (
                 <div key={f.id} className="text-sm py-1 border-b border-default last:border-0">
-                  {formatDate(f.performedAt)} — {f.description ?? f.flowType}: {f.fromLocation} →{' '}
-                  {f.toLocation}
+                  {formatDate(f.performedAt)} —{' '}
+                  {f.description ?? MATERIAL_FLOW_TYPE_LABELS[f.flowType] ?? f.flowType}:{' '}
+                  {f.fromLocation} → {f.toLocation}
                   {f.quantity ? ` (${f.quantity} ${f.unit ?? 'т'})` : ''}
                 </div>
               ))}
@@ -332,6 +448,7 @@ export function CargoDetailPanel({
               ))}
             </div>
           )}
+          <SectionFooterLink to={entityLinks.flows()} label="Открыть журнал потоков" />
         </CargoAccordionSection>
       )}
     </div>

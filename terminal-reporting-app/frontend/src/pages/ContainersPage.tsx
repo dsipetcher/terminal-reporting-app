@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { containersApi, warehousesApi, vesselCallsApi } from '../api';
 import type { Container, Warehouse, VesselCall } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -12,6 +12,9 @@ import {
   CARGO_BATCH_STATUS_LABELS,
   CUSTOMS_STATUS_LABELS,
   validateBatchNumber,
+  formatPortCode,
+  formatWarehouseLabel,
+  validateContainerVesselAssignment,
 } from '../utils';
 
 const emptyForm = {
@@ -41,10 +44,12 @@ export default function ContainersPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [lockedVesselCallId, setLockedVesselCallId] = useState<number | null>(null);
   const [movingId, setMovingId] = useState<number | null>(null);
   const [searchNumber, setSearchNumber] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [moveForm, setMoveForm] = useState({ warehouseId: '', location: '', status: 'IN_TERMINAL' });
+  const formRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadData();
@@ -54,7 +59,7 @@ export default function ContainersPage() {
     try {
       setLoading(true);
       const [containersData, warehousesData, vesselCallsData] = await Promise.all([
-        containersApi.getAll(selectedStatus !== 'ALL' ? { status: selectedStatus } : undefined),
+        containersApi.getAll(),
         warehousesApi.getAll(),
         vesselCallsApi.getAll(),
       ]);
@@ -71,11 +76,13 @@ export default function ContainersPage() {
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
+    setLockedVesselCallId(null);
     setShowForm(false);
   };
 
   const startEdit = (container: Container) => {
     setEditingId(container.id);
+    setLockedVesselCallId(container.vesselCallId ?? null);
     setForm({
       containerNumber: container.containerNumber,
       containerType: container.containerType,
@@ -95,6 +102,9 @@ export default function ContainersPage() {
       customsStatus: container.customsStatus ?? '',
     });
     setShowForm(true);
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const buildPayload = () => ({
@@ -108,8 +118,8 @@ export default function ContainersPage() {
     cargoDescription: form.cargoDescription || undefined,
     grossWeight: form.grossWeight ? parseFloat(form.grossWeight) : undefined,
     sealNumber: form.sealNumber || undefined,
-    vesselCallId: form.vesselCallId ? Number(form.vesselCallId) : undefined,
-    warehouseId: form.warehouseId ? Number(form.warehouseId) : undefined,
+    vesselCallId: form.vesselCallId ? Number(form.vesselCallId) : null,
+    warehouseId: form.warehouseId ? Number(form.warehouseId) : null,
     location: form.location || undefined,
     portOfLoading: form.portOfLoading || undefined,
     portOfDischarge: form.portOfDischarge || undefined,
@@ -125,17 +135,28 @@ export default function ContainersPage() {
       return;
     }
 
+    const nextVesselCallId = form.vesselCallId ? Number(form.vesselCallId) : null;
+    const vesselErr = validateContainerVesselAssignment(lockedVesselCallId, nextVesselCallId);
+    if (vesselErr) {
+      alert(vesselErr);
+      return;
+    }
+
     try {
       if (editingId) {
-        await containersApi.update(editingId, buildPayload());
+        await containersApi.update(editingId, buildPayload() as Partial<Container>);
       } else {
-        await containersApi.create(buildPayload());
+        await containersApi.create(buildPayload() as Partial<Container>);
       }
       resetForm();
-      loadData();
+      await loadData();
     } catch (error) {
       console.error('Error saving container:', error);
-      alert(editingId ? 'Ошибка при обновлении партии' : 'Ошибка при создании партии');
+      const message =
+        (error as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+        (error instanceof Error ? error.message : '') ||
+        (editingId ? 'Ошибка при обновлении партии' : 'Ошибка при создании партии');
+      alert(message);
     }
   };
 
@@ -205,7 +226,7 @@ export default function ContainersPage() {
     <div>
       <PageHeader
         title="Партии груза (уголь / нефть)"
-        subtitle="FR-01–02: учётная единица ИЛС · CRUD и поиск по номеру партии"
+        subtitle="Учётная единица ИЛС · создание, изменение и поиск по номеру партии"
         action={
           <button
             onClick={() => {
@@ -220,6 +241,7 @@ export default function ContainersPage() {
       />
 
       {showForm && (
+        <div ref={formRef}>
         <Card className="mb-6" title={editingId ? 'Редактирование партии' : 'Новая партия груза'}>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -279,12 +301,21 @@ export default function ContainersPage() {
 
             <div>
               <label className="label-field">Судозаход (отгрузка на флот)</label>
-              <select value={form.vesselCallId} onChange={(e) => setForm({ ...form, vesselCallId: e.target.value })} className="input-field">
-                <option value="">Не выбран</option>
-                {vesselCalls.map((vc) => (
-                  <option key={vc.id} value={vc.id}>{vc.vessel.name} - {vc.voyageNumber}</option>
-                ))}
-              </select>
+              {lockedVesselCallId ? (
+                <p className="input-field bg-slate-50 dark:bg-slate-900 text-secondary">
+                  {vesselCalls.find((vc) => vc.id === lockedVesselCallId)?.vessel.name ?? '—'}
+                  {' · рейс '}
+                  {vesselCalls.find((vc) => vc.id === lockedVesselCallId)?.voyageNumber ?? '—'}
+                  <span className="block text-xs text-muted mt-1">Судозаход уже назначен и не может быть изменён</span>
+                </p>
+              ) : (
+                <select value={form.vesselCallId} onChange={(e) => setForm({ ...form, vesselCallId: e.target.value })} className="input-field">
+                  <option value="">Не выбран</option>
+                  {vesselCalls.map((vc) => (
+                    <option key={vc.id} value={vc.id}>{vc.vessel.name} - {vc.voyageNumber}</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
@@ -292,7 +323,7 @@ export default function ContainersPage() {
               <select value={form.warehouseId} onChange={(e) => setForm({ ...form, warehouseId: e.target.value })} className="input-field">
                 <option value="">Не выбран</option>
                 {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>{w.number} {w.name}</option>
+                  <option key={w.id} value={w.id}>{formatWarehouseLabel(w)}</option>
                 ))}
               </select>
             </div>
@@ -342,6 +373,7 @@ export default function ContainersPage() {
             </div>
           </form>
         </Card>
+        </div>
       )}
 
       <div className="mb-6 flex flex-col md:flex-row gap-4">
@@ -402,12 +434,26 @@ export default function ContainersPage() {
                   <p className="text-sm"><span className="text-subtle">Объём:</span> {container.quantityTons ?? container.grossWeight} т</p>
                 )}
                 {container.cargoDescription && <p className="text-sm"><span className="text-subtle">Описание:</span> {container.cargoDescription}</p>}
-                {container.warehouse && <p className="text-sm"><span className="text-subtle">Склад:</span> {container.warehouse.number}</p>}
+                {container.warehouse && (
+                  <p className="text-sm">
+                    <span className="text-subtle">Склад:</span> {formatWarehouseLabel(container.warehouse)}
+                  </p>
+                )}
                 {container.location && <p className="text-sm"><span className="text-subtle">Место:</span> {container.location}</p>}
                 {container.vesselCall && <p className="text-sm"><span className="text-subtle">Судно:</span> {container.vesselCall.vessel.name}</p>}
-                {container.portOfLoading && <p className="text-sm"><span className="text-subtle">POL:</span> {container.portOfLoading}</p>}
-                {container.portOfDischarge && <p className="text-sm"><span className="text-subtle">POD:</span> {container.portOfDischarge}</p>}
-                {container.blNumber && <p className="text-sm"><span className="text-subtle">B/L:</span> {container.blNumber}</p>}
+                {container.portOfLoading && (
+                  <p className="text-sm">
+                    <span className="text-subtle">Порт погрузки:</span>{' '}
+                    {formatPortCode(container.portOfLoading)}
+                  </p>
+                )}
+                {container.portOfDischarge && (
+                  <p className="text-sm">
+                    <span className="text-subtle">Порт выгрузки:</span>{' '}
+                    {formatPortCode(container.portOfDischarge)}
+                  </p>
+                )}
+                {container.blNumber && <p className="text-sm"><span className="text-subtle">Коносамент:</span> {container.blNumber}</p>}
                 {container.customsStatus && <p className="text-sm"><span className="text-subtle">Таможня:</span> {CUSTOMS_STATUS_LABELS[container.customsStatus] ?? container.customsStatus}</p>}
               </div>
 
@@ -417,7 +463,7 @@ export default function ContainersPage() {
                   <select value={moveForm.warehouseId} onChange={(e) => setMoveForm({ ...moveForm, warehouseId: e.target.value })} className="input-field">
                     <option value="">Без склада</option>
                     {warehouses.map((w) => (
-                      <option key={w.id} value={w.id}>{w.number} {w.name}</option>
+                      <option key={w.id} value={w.id}>{formatWarehouseLabel(w)}</option>
                     ))}
                   </select>
                   <input type="text" value={moveForm.location} onChange={(e) => setMoveForm({ ...moveForm, location: e.target.value })} className="input-field" placeholder="A-12-3" />

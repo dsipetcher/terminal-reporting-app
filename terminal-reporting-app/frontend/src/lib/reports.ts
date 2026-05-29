@@ -14,8 +14,15 @@ import {
   VESSEL_CALL_STATUS_LABELS,
   CONTAINER_STATUS_LABELS,
   WAGON_STATUS_LABELS,
+  WAGON_TYPE_LABELS,
   WAREHOUSE_TYPE_LABELS,
   ILS_FUNCTION_LABELS,
+  EVENT_TYPE_LABELS,
+  getTransportModeLabel,
+  MATERIAL_FLOW_TYPE_LABELS,
+  FIELD_LABELS,
+  formatBerthLabel,
+  formatWarehouseLabel,
 } from '../utils';
 
 export type ReportTypeId =
@@ -46,7 +53,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   {
     id: 'terminal-summary',
     title: 'Сводка по терминалу',
-    description: 'KPI: партии, заказы, транспорт, потоки за период',
+    description: 'Сводные показатели: партии, заказы, транспорт, потоки за период',
     frRef: 'FR-18',
   },
   {
@@ -63,7 +70,7 @@ export const REPORT_DEFINITIONS: ReportDefinition[] = [
   },
   {
     id: 'wagons',
-    title: 'Работа вагонного фронта',
+    title: 'Учёт вагонов',
     description: 'Прибытие, выгрузка, статусы вагонов',
     frRef: 'FR-18',
   },
@@ -114,7 +121,7 @@ export async function generateReport(
     case 'info-flows':
       return buildInfoFlowsReport(def.title, generatedAt, period, from, to);
     default:
-      throw new Error('Unknown report type');
+      throw new Error('Неизвестный тип отчёта');
   }
 }
 
@@ -141,7 +148,6 @@ async function buildTerminalSummary(
     ['Активных судозаходов', String(stats.vesselCallsActive ?? 0)],
     ['Заказов в работе', String(stats.ordersInProgress ?? 0)],
     ['Вагонов', String(stats.wagons ?? 0)],
-    ['Автомобилей', String(stats.trucks ?? 0)],
     ['Складов', String(stats.warehouses ?? 0)],
     ['Заказов за период', String(ordersInPeriod.length)],
     ['Событий ИЛС за период', String(flowsInPeriod.length)],
@@ -174,12 +180,20 @@ async function buildVesselCallsReport(
     (c) => inDateRange(c.eta, from, to) || inDateRange(c.createdAt, from, to)
   );
 
-  const headers = ['Судно', 'IMO', 'Рейс', 'Причал', 'Статус', 'ETA', 'ATA'];
+  const headers = [
+    'Судно',
+    FIELD_LABELS.IMO,
+    'Рейс',
+    'Причал',
+    'Статус',
+    FIELD_LABELS.ETA,
+    FIELD_LABELS.ATA,
+  ];
   const rows = filtered.map((c) => [
     c.vessel.name,
     c.vessel.imoNumber,
     c.voyageNumber,
-    c.berth ? `№${c.berth.number}` : '—',
+    c.berth ? formatBerthLabel(c.berth) : '—',
     VESSEL_CALL_STATUS_LABELS[c.status] ?? c.status,
     c.eta ? formatDateTime(c.eta) : '—',
     c.ata ? formatDateTime(c.ata) : '—',
@@ -221,8 +235,8 @@ async function buildCargoMovementReport(
     ]),
     ...flowsInPeriod.map((f) => [
       'Мат. поток',
-      f.description ?? f.transportMode ?? '—',
-      f.transportMode ?? '—',
+      f.description ?? MATERIAL_FLOW_TYPE_LABELS[f.flowType] ?? '—',
+      getTransportModeLabel(f.transportMode),
       f.quantity != null ? String(f.quantity) : '—',
       formatDateTime(f.createdAt),
     ]),
@@ -253,9 +267,9 @@ async function buildWagonsReport(
   const headers = ['№ вагона', 'Тип', 'Статус', 'Склад', 'Партия', 'Прибытие', 'Убытие'];
   const rows = filtered.map((w) => [
     w.number,
-    w.wagonType,
+    WAGON_TYPE_LABELS[w.wagonType] ?? w.wagonType,
     WAGON_STATUS_LABELS[w.status] ?? w.status,
-    w.warehouse?.number ?? '—',
+    formatWarehouseLabel(w.warehouse),
     w.container?.containerNumber ?? '—',
     formatDateTime(w.arrivalAt),
     w.departureAt ? formatDateTime(w.departureAt) : '—',
@@ -278,13 +292,12 @@ async function buildWarehousesReport(
 ): Promise<ReportResult> {
   const warehouses = await warehousesApi.getAll();
 
-  const headers = ['№', 'Название', 'Тип', 'Ёмкость, т', 'Загрузка, т', 'Заполнение, %', 'Партий', 'Вагонов'];
+  const headers = ['Название', 'Тип', 'Ёмкость, т', 'Загрузка, т', 'Заполнение, %', 'Партий', 'Вагонов'];
   const rows = warehouses.map((w) => {
     const load = w.load ?? 0;
     const pct = w.capacity > 0 ? Math.round((load / w.capacity) * 100) : 0;
     return [
-      w.number,
-      w.name ?? '—',
+      formatWarehouseLabel(w),
       WAREHOUSE_TYPE_LABELS[w.warehouseType] ?? w.warehouseType,
       String(w.capacity),
       String(load),
@@ -318,7 +331,7 @@ async function buildInfoFlowsReport(
   const rows = filtered.map((e) => [
     formatDateTime(e.createdAt),
     ILS_FUNCTION_LABELS[e.ilsFunction] ?? e.ilsFunction,
-    e.eventType,
+    EVENT_TYPE_LABELS[e.eventType] ?? e.eventType,
     e.message,
     e.orderId ? String(e.orderId) : '—',
   ]);

@@ -25,6 +25,33 @@ export enum WarehouseType {
   EMPTY_DEPOT = 'EMPTY_DEPOT',
 }
 
+// Типы для ж/д составов
+export interface TrainConsist {
+  id: number;
+  trainNumber: string;
+  origin?: string;
+  destination?: string;
+  track?: string;
+  direction: 'INBOUND' | 'OUTBOUND';
+  arrivalAt: string;
+  formedAt?: string;
+  departureAt?: string;
+  status: TrainConsistStatus;
+  wagons?: Wagon[];
+  _count?: { wagons: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export enum TrainConsistStatus {
+  EN_ROUTE = 'EN_ROUTE',
+  ARRIVED = 'ARRIVED',
+  UNLOADING = 'UNLOADING',
+  IN_PARK = 'IN_PARK',
+  FORMING = 'FORMING',
+  DEPARTED = 'DEPARTED',
+}
+
 // Типы для вагонов
 export interface Wagon {
   id: number;
@@ -39,6 +66,8 @@ export interface Wagon {
   arrivalAt: string;
   departureAt?: string;
   status: WagonStatus;
+  trainConsistId?: number;
+  trainConsist?: TrainConsist;
   containerId?: number;
   container?: Container;
   createdAt: string;
@@ -54,10 +83,11 @@ export enum WagonType {
 }
 
 export enum WagonStatus {
-  EXPECTED = 'EXPECTED',
+  EN_ROUTE = 'EN_ROUTE',
   ARRIVED = 'ARRIVED',
   UNLOADING = 'UNLOADING',
-  LOADING = 'LOADING',
+  IN_PARK = 'IN_PARK',
+  FORMING = 'FORMING',
   DEPARTED = 'DEPARTED',
 }
 
@@ -115,10 +145,9 @@ export interface VesselCall {
 }
 
 export enum VesselCallStatus {
-  EXPECTED = 'EXPECTED',
+  EN_ROUTE = 'EN_ROUTE',
   ARRIVED = 'ARRIVED',
-  BERTHED = 'BERTHED',
-  IN_OPERATION = 'IN_OPERATION',
+  UNLOADING = 'UNLOADING',
   DEPARTED = 'DEPARTED',
   CANCELLED = 'CANCELLED',
 }
@@ -199,53 +228,6 @@ export enum CargoBatchStatus {
 
 export type ContainerStatus = CargoBatchStatus | string;
 
-// Типы для автотранспорта
-export interface Truck {
-  id: number;
-  licensePlate: string;
-  truckType: TruckType;
-  carrier: string;
-  driverName?: string;
-  driverDocument?: string;
-  visits?: TruckVisit[];
-  _count?: {
-    visits: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-export enum TruckType {
-  TRUCK = 'TRUCK',
-  CONTAINER_TRUCK = 'CONTAINER_TRUCK',
-  DUMP_TRUCK = 'DUMP_TRUCK',
-  REFRIGERATOR = 'REFRIGERATOR',
-}
-
-export interface TruckVisit {
-  id: number;
-  truckId: number;
-  truck: Truck;
-  timeSlot: string;
-  timeIn?: string;
-  timeOut?: string;
-  purpose: string;
-  gateNumber?: string;
-  status: TruckVisitStatus;
-  containerId?: number;
-  container?: Container;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export enum TruckVisitStatus {
-  SCHEDULED = 'SCHEDULED',
-  ARRIVED = 'ARRIVED',
-  IN_PROGRESS = 'IN_PROGRESS',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-}
-
 // ИЛС: контрагенты и справочники
 export interface Counterparty {
   id: number;
@@ -297,7 +279,30 @@ export interface LogisticsOrder {
   vesselCall?: VesselCall;
   notes?: string;
   containers?: Pick<Container, 'id' | 'containerNumber' | 'status'>[];
-  _count?: { materialFlows: number; infoEvents: number };
+  documents?: LogisticsOrderDocument[];
+  _count?: { materialFlows: number; infoEvents: number; documents?: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type OrderDocumentType =
+  | 'CONTRACT'
+  | 'INVOICE'
+  | 'WAYBILL'
+  | 'CERTIFICATE'
+  | 'CUSTOMS'
+  | 'OTHER';
+
+export interface LogisticsOrderDocument {
+  id: number;
+  orderId: number;
+  fileName: string;
+  storedName: string;
+  mimeType?: string;
+  fileSize: number;
+  documentType?: OrderDocumentType;
+  description?: string;
+  uploadedAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -324,7 +329,7 @@ export interface MaterialFlow {
 }
 
 export type MaterialFlowType = 'ARRIVAL' | 'DEPARTURE' | 'INTERNAL_TRANSFER' | 'STORAGE';
-export type TransportMode = 'SEA' | 'RAIL' | 'ROAD' | 'WAREHOUSE';
+export type TransportMode = 'SEA' | 'RAIL' | 'WAREHOUSE';
 
 export interface InfoFlowEvent {
   id: number;
@@ -360,7 +365,6 @@ export interface RouteStage {
 export type RouteStageType =
   | 'SUPPLIER'
   | 'RAIL_STATION'
-  | 'ROAD_GATE'
   | 'WAREHOUSE'
   | 'BERTH'
   | 'SHIP'
@@ -435,7 +439,6 @@ export interface DashboardStats {
   vesselCallsActive: number;
   containers: number;
   wagons: number;
-  trucks: number;
   warehouses: number;
   ordersTotal: number;
   ordersPlanning: number;

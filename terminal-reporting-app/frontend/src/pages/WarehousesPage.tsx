@@ -1,11 +1,13 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { warehousesApi } from '../api';
 import type { Warehouse } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EntityActions } from '../components/EntityActions';
-import { WAREHOUSE_TYPE_LABELS } from '../utils';
+import { WAREHOUSE_TYPE_LABELS, formatWarehouseLabel } from '../utils';
+import { useEntityHighlight } from '../hooks/useEntityHighlight';
+import { entityDomId } from '../lib/entityLinks';
 
 const emptyForm = {
   number: '',
@@ -37,6 +39,8 @@ export default function WarehousesPage() {
   useEffect(() => {
     fetchWarehouses();
   }, []);
+
+  const { highlightClass } = useEntityHighlight(warehouses.map((w) => w.id));
 
   const resetForm = () => {
     setForm(emptyForm);
@@ -104,7 +108,7 @@ export default function WarehousesPage() {
     <div>
       <PageHeader
         title="Склады угля и нефти"
-        subtitle="FR-14–15: размещение партий, ёмкость и перемещение груза"
+        subtitle="Размещение партий, ёмкость и перемещение груза"
         action={
           <button
             onClick={() => {
@@ -201,11 +205,14 @@ export default function WarehousesPage() {
             const freeSpace = w.capacity - (w.load || 0);
 
             return (
-              <Card key={w.id} className="hover:shadow-lg transition-shadow">
+              <Card
+                key={w.id}
+                id={entityDomId(w.id)}
+                className={`hover:shadow-lg transition-shadow ${highlightClass(w.id)}`}
+              >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-primary">№{w.number}</h3>
-                    {w.name && <p className="text-sm text-muted">{w.name}</p>}
+                    <h3 className="text-2xl font-bold text-primary">{formatWarehouseLabel(w)}</h3>
                     <p className="text-xs text-subtle mt-1">{WAREHOUSE_TYPE_LABELS[w.warehouseType]}</p>
                     {w.zone && <p className="text-xs text-subtle">Зона: {w.zone}</p>}
                   </div>

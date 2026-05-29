@@ -1,16 +1,19 @@
 import type { RouteStage } from '../../types';
+import { Link } from 'react-router-dom';
 import { StatusBadge } from '../StatusBadge';
-import { ROUTE_STAGE_TYPE_LABELS, ROUTE_STAGE_STATUS_LABELS, TRANSPORT_MODE_LABELS } from '../../utils';
+import { ROUTE_STAGE_TYPE_LABELS, ROUTE_STAGE_STATUS_LABELS, getTransportModeLabel } from '../../utils';
 import { ChevronRight } from 'lucide-react';
 
 export function RouteTimeline({
   stages,
   currentStageId,
   compact = false,
+  getStageHref,
 }: {
   stages: RouteStage[];
   currentStageId?: number;
   compact?: boolean;
+  getStageHref?: (stage: RouteStage) => string | undefined;
 }) {
   if (compact) {
     return (
@@ -18,19 +21,33 @@ export function RouteTimeline({
         {stages.map((stage) => {
           const isCurrent = stage.id === currentStageId || stage.status === 'CURRENT';
           const isDone = stage.status === 'COMPLETED';
+          const href = getStageHref?.(stage);
+          const className = `text-[10px] px-2 py-0.5 rounded-full font-medium ${
+            isDone
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+              : isCurrent
+                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 ring-1 ring-amber-400'
+                : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+          } ${href ? 'hover:ring-2 hover:ring-blue-400 cursor-pointer' : ''}`;
+
+          const label = `${stage.sequence}. ${ROUTE_STAGE_TYPE_LABELS[stage.stageType]}`;
+
+          if (href) {
+            return (
+              <Link
+                key={stage.id}
+                to={href}
+                title={`${stage.locationName} — перейти к разделу`}
+                className={className}
+              >
+                {label}
+              </Link>
+            );
+          }
+
           return (
-            <span
-              key={stage.id}
-              title={stage.locationName}
-              className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                isDone
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-                  : isCurrent
-                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 ring-1 ring-amber-400'
-                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-              }`}
-            >
-              {stage.sequence}. {ROUTE_STAGE_TYPE_LABELS[stage.stageType]}
+            <span key={stage.id} title={stage.locationName} className={className}>
+              {label}
             </span>
           );
         })}
@@ -71,7 +88,7 @@ export function RouteTimeline({
               <p className="text-xs font-medium">{stage.locationName}</p>
               {stage.transportMode && (
                 <p className="text-[10px] text-subtle">
-                  {TRANSPORT_MODE_LABELS[stage.transportMode]}
+                  {getTransportModeLabel(stage.transportMode)}
                 </p>
               )}
               <StatusBadge status={stage.status} label={ROUTE_STAGE_STATUS_LABELS[stage.status]} />

@@ -3,7 +3,6 @@ import {
   logisticsRoutesApi,
   containersApi,
   wagonsApi,
-  truckVisitsApi,
   vesselCallsApi,
 } from '../api';
 import { EXPORT_ROUTE_CHAIN } from '../utils';
@@ -14,7 +13,6 @@ import type {
   Container,
   RouteStage,
   Wagon,
-  TruckVisit,
   VesselCall,
 } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -29,9 +27,11 @@ import {
   CARGO_TRACKING_STATUS_LABELS,
   CARGO_BATCH_STATUS_LABELS,
   CARGO_CATEGORY_LABELS,
-  TRANSPORT_MODE_LABELS,
+  getTransportModeLabel,
+  formatPortCode,
+  formatWarehouseLabel,
 } from '../utils';
-import { Search, MapPin, ChevronRight, Train, Truck, Ship } from 'lucide-react';
+import { Search, MapPin, ChevronRight, Train, Ship } from 'lucide-react';
 
 function RouteTimeline({ stages, currentStageId }: { stages: RouteStage[]; currentStageId?: number }) {
   return (
@@ -61,7 +61,7 @@ function RouteTimeline({ stages, currentStageId }: { stages: RouteStage[]; curre
               <p className="text-xs font-semibold text-primary">{ROUTE_STAGE_TYPE_LABELS[stage.stageType]}</p>
               <p className="text-sm font-medium">{stage.locationName}</p>
               {stage.transportMode && (
-                <p className="text-xs text-subtle">{TRANSPORT_MODE_LABELS[stage.transportMode]}</p>
+                <p className="text-xs text-subtle">{getTransportModeLabel(stage.transportMode)}</p>
               )}
               <StatusBadge status={stage.status} label={ROUTE_STAGE_STATUS_LABELS[stage.status]} />
             </div>
@@ -75,16 +75,13 @@ function RouteTimeline({ stages, currentStageId }: { stages: RouteStage[]; curre
 function TransportLinks({
   container,
   wagons,
-  truckVisits,
   vesselCalls,
 }: {
   container: Container;
   wagons: Wagon[];
-  truckVisits: TruckVisit[];
   vesselCalls: VesselCall[];
 }) {
   const linkedWagons = wagons.filter((w) => w.containerId === container.id);
-  const linkedVisits = truckVisits.filter((v) => v.containerId === container.id);
   const vesselCall = container.vesselCallId
     ? vesselCalls.find((vc) => vc.id === container.vesselCallId)
     : undefined;
@@ -95,13 +92,6 @@ function TransportLinks({
       icon: Train,
       label: 'Вагон',
       value: `${w.number}${w.trainNumber ? ` · поезд ${w.trainNumber}` : ''}`,
-    });
-  });
-  linkedVisits.forEach((v) => {
-    items.push({
-      icon: Truck,
-      label: 'Авто',
-      value: v.truck?.licensePlate ?? `Визит #${v.id}`,
     });
   });
   if (vesselCall) {
@@ -148,7 +138,7 @@ function TrackingCard({
       <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
         <div>
           <p className="text-sm text-muted">
-            Маршрут {tracking.route?.routeNumber}: {tracking.route?.origin} → {tracking.route?.destination}
+            Маршрут {tracking.route?.routeNumber}: {formatPortCode(tracking.route?.origin)} → {formatPortCode(tracking.route?.destination)}
           </p>
         </div>
         <StatusBadge status={tracking.status} label={CARGO_TRACKING_STATUS_LABELS[tracking.status]} />
@@ -192,7 +182,6 @@ export default function CargoTrackingPage() {
   const [cargoList, setCargoList] = useState<Container[]>([]);
   const [routes, setRoutes] = useState<LogisticsRoute[]>([]);
   const [wagons, setWagons] = useState<Wagon[]>([]);
-  const [truckVisits, setTruckVisits] = useState<TruckVisit[]>([]);
   const [vesselCalls, setVesselCalls] = useState<VesselCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,17 +196,15 @@ export default function CargoTrackingPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [containersData, routesData, wagonsData, visitsData, callsData] = await Promise.all([
+      const [containersData, routesData, wagonsData, callsData] = await Promise.all([
         containersApi.getAll(),
         logisticsRoutesApi.getAll(),
         wagonsApi.getAll(),
-        truckVisitsApi.getAll(),
         vesselCallsApi.getAll(),
       ]);
       setCargoList(containersData);
       setRoutes(routesData);
       setWagons(wagonsData);
-      setTruckVisits(visitsData);
       setVesselCalls(callsData);
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
@@ -296,7 +283,7 @@ export default function CargoTrackingPage() {
       <Card className="mb-6 border border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20">
         <p className="text-sm text-secondary">
           ИЛС отслеживает <strong className="text-primary">груз</strong> от поставщика до порта назначения.
-          Ж/д вагон, автомобиль или судно — идентификаторы для сопоставления с партией, а не отдельные объекты учёта.
+          Вагон или судно — идентификаторы для сопоставления с партией, а не отдельные объекты учёта.
         </p>
       </Card>
 
@@ -372,7 +359,9 @@ export default function CargoTrackingPage() {
                     <span className="text-sm text-muted">Поставщик: {activeCargo.supplierName}</span>
                   )}
                   {activeCargo.warehouse && (
-                    <span className="text-sm text-muted">Склад: {activeCargo.warehouse.number}</span>
+                    <span className="text-sm text-muted">
+                      Склад: {formatWarehouseLabel(activeCargo.warehouse)}
+                    </span>
                   )}
                 </div>
 
@@ -382,7 +371,6 @@ export default function CargoTrackingPage() {
                 <TransportLinks
                   container={activeCargo}
                   wagons={wagons}
-                  truckVisits={truckVisits}
                   vesselCalls={vesselCalls}
                 />
               </Card>
@@ -433,7 +421,7 @@ export default function CargoTrackingPage() {
                       <option value="">Выберите маршрут для партии {activeCargo.containerNumber}</option>
                       {routes.map((route) => (
                         <option key={route.id} value={route.id}>
-                          {route.routeNumber} · {route.origin} → {route.destination}
+                          {route.routeNumber} · {formatPortCode(route.origin)} → {formatPortCode(route.destination)}
                         </option>
                       ))}
                     </select>
@@ -443,7 +431,7 @@ export default function CargoTrackingPage() {
                       disabled={!addRouteId}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
                     >
-                      Поставить на отслеживание (FR-05)
+                      Поставить на отслеживание
                     </button>
                   </div>
                 )}
@@ -453,7 +441,7 @@ export default function CargoTrackingPage() {
                   routes.map((route) => (
                     <div key={route.id} className="p-3 rounded-lg border border-default">
                       <p className="font-mono font-semibold text-sm">{route.routeNumber}</p>
-                      <p className="text-xs text-muted">{route.origin} → {route.destination}</p>
+                      <p className="text-xs text-muted">{formatPortCode(route.origin)} → {formatPortCode(route.destination)}</p>
                       <div className="flex gap-2 mt-2">
                         <StatusBadge status={route.status} label={ROUTE_STATUS_LABELS[route.status]} />
                         <span className="text-xs text-subtle">

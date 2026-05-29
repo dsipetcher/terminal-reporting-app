@@ -4,12 +4,12 @@ import type {
   VesselCall,
   Berth,
   Container,
-  Truck,
-  TruckVisit,
   Warehouse,
   Wagon,
+  TrainConsist,
   DashboardStats,
   LogisticsOrder,
+  LogisticsOrderDocument,
   Counterparty,
   MaterialFlow,
   InfoFlowEvent,
@@ -25,13 +25,13 @@ import {
   demoBerthsApi,
   demoContainersApi,
   demoDashboardApi,
-  demoTruckVisitsApi,
-  demoTrucksApi,
   demoVesselCallsApi,
   demoVesselsApi,
   demoWagonsApi,
+  demoTrainConsistsApi,
   demoWarehousesApi,
   demoLogisticsOrdersApi,
+  demoLogisticsOrderDocumentsApi,
   demoCounterpartiesApi,
   demoMaterialFlowsApi,
   demoInfoFlowsApi,
@@ -116,26 +116,6 @@ const realContainersApi = {
   delete: (id: number) => api.delete(`/containers/${id}`),
 };
 
-const realTrucksApi = {
-  getAll: () => api.get<Truck[]>('/trucks').then(res => res.data),
-  getById: (id: number) => api.get<Truck>(`/trucks/${id}`).then(res => res.data),
-  create: (data: Partial<Truck>) => api.post<Truck>('/trucks', data).then(res => res.data),
-  update: (id: number, data: Partial<Truck>) => api.put<Truck>(`/trucks/${id}`, data).then(res => res.data),
-  delete: (id: number) => api.delete(`/trucks/${id}`),
-};
-
-const realTruckVisitsApi = {
-  getAll: (params?: { status?: string; date?: string }) =>
-    api.get<TruckVisit[]>('/truck-visits', { params }).then(res => res.data),
-  getById: (id: number) => api.get<TruckVisit>(`/truck-visits/${id}`).then(res => res.data),
-  create: (data: Partial<TruckVisit>) => api.post<TruckVisit>('/truck-visits', data).then(res => res.data),
-  update: (id: number, data: Partial<TruckVisit>) =>
-    api.put<TruckVisit>(`/truck-visits/${id}`, data).then(res => res.data),
-  checkIn: (id: number) => api.patch<TruckVisit>(`/truck-visits/${id}/check-in`).then(res => res.data),
-  checkOut: (id: number) => api.patch<TruckVisit>(`/truck-visits/${id}/check-out`).then(res => res.data),
-  delete: (id: number) => api.delete(`/truck-visits/${id}`),
-};
-
 const realWarehousesApi = {
   getAll: () => api.get<Warehouse[]>('/warehouses').then(res => res.data),
   getById: (id: number) => api.get<Warehouse>(`/warehouses/${id}`).then(res => res.data),
@@ -145,9 +125,36 @@ const realWarehousesApi = {
   delete: (id: number) => api.delete(`/warehouses/${id}`),
 };
 
+const realTrainConsistsApi = {
+  getAll: (params?: { status?: string; direction?: string }) =>
+    api.get<TrainConsist[]>('/train-consists', { params }).then((res) => res.data),
+  getById: (id: number) =>
+    api.get<TrainConsist>(`/train-consists/${id}`).then((res) => res.data),
+  create: (data: Partial<TrainConsist> & { wagonIds?: number[] }) =>
+    api.post<TrainConsist>('/train-consists', data).then((res) => res.data),
+  createOutbound: (data: {
+    trainNumber: string;
+    destination: string;
+    track?: string;
+    wagonIds: number[];
+  }) => api.post<TrainConsist>('/train-consists/outbound', data).then((res) => res.data),
+  updateStatus: (id: number, status: string) =>
+    api.patch<TrainConsist | { id: number; status: string; purged?: boolean }>(
+      `/train-consists/${id}/status`,
+      { status }
+    ).then((res) => res.data),
+  disband: (id: number) =>
+    api.post<{ id: number; disbanded: boolean }>(`/train-consists/${id}/disband`).then((res) => res.data),
+  delete: (id: number) => api.delete(`/train-consists/${id}`),
+};
+
 const realWagonsApi = {
-  getAll: (params?: { status?: string; warehouseId?: number }) =>
-    api.get<Wagon[]>('/wagons', { params }).then(res => res.data),
+  getAll: (params?: {
+    status?: string;
+    warehouseId?: number;
+    withoutConsist?: boolean;
+    inParkWithoutConsist?: boolean;
+  }) => api.get<Wagon[]>('/wagons', { params }).then(res => res.data),
   getById: (id: number) => api.get<Wagon>(`/wagons/${id}`).then(res => res.data),
   create: (data: Partial<Wagon>) => api.post<Wagon>('/wagons', data).then(res => res.data),
   update: (id: number, data: Partial<Wagon>) => api.put<Wagon>(`/wagons/${id}`, data).then(res => res.data),
@@ -167,6 +174,45 @@ const realLogisticsOrdersApi = {
   updateStatus: (id: number, status: string) =>
     api.patch<LogisticsOrder>(`/logistics-orders/${id}/status`, { status }).then((res) => res.data),
   delete: (id: number) => api.delete(`/logistics-orders/${id}`),
+};
+
+function triggerFileDownload(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+const realLogisticsOrderDocumentsApi = {
+  getAll: (orderId: number) =>
+    api
+      .get<LogisticsOrderDocument[]>(`/logistics-orders/${orderId}/documents`)
+      .then((res) => res.data),
+  upload: (
+    orderId: number,
+    file: File,
+    meta?: { documentType?: string; description?: string }
+  ) => {
+    const form = new FormData();
+    form.append('file', file);
+    if (meta?.documentType) form.append('documentType', meta.documentType);
+    if (meta?.description) form.append('description', meta.description);
+    return api
+      .post<LogisticsOrderDocument>(`/logistics-orders/${orderId}/documents`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((res) => res.data);
+  },
+  download: async (orderId: number, docId: number, fileName: string) => {
+    const response = await api.get(`/logistics-orders/${orderId}/documents/${docId}/download`, {
+      responseType: 'blob',
+    });
+    triggerFileDownload(response.data, fileName);
+  },
+  delete: (orderId: number, docId: number) =>
+    api.delete(`/logistics-orders/${orderId}/documents/${docId}`),
 };
 
 const realCounterpartiesApi = {
@@ -228,11 +274,13 @@ export const vesselsApi = IS_DEMO_MODE ? demoVesselsApi : realVesselsApi;
 export const vesselCallsApi = IS_DEMO_MODE ? demoVesselCallsApi : realVesselCallsApi;
 export const berthsApi = IS_DEMO_MODE ? demoBerthsApi : realBerthsApi;
 export const containersApi = IS_DEMO_MODE ? demoContainersApi : realContainersApi;
-export const trucksApi = IS_DEMO_MODE ? demoTrucksApi : realTrucksApi;
-export const truckVisitsApi = IS_DEMO_MODE ? demoTruckVisitsApi : realTruckVisitsApi;
 export const warehousesApi = IS_DEMO_MODE ? demoWarehousesApi : realWarehousesApi;
 export const wagonsApi = IS_DEMO_MODE ? demoWagonsApi : realWagonsApi;
+export const trainConsistsApi = IS_DEMO_MODE ? demoTrainConsistsApi : realTrainConsistsApi;
 export const logisticsOrdersApi = IS_DEMO_MODE ? demoLogisticsOrdersApi : realLogisticsOrdersApi;
+export const logisticsOrderDocumentsApi = IS_DEMO_MODE
+  ? demoLogisticsOrderDocumentsApi
+  : realLogisticsOrderDocumentsApi;
 export const counterpartiesApi = IS_DEMO_MODE ? demoCounterpartiesApi : realCounterpartiesApi;
 export const materialFlowsApi = IS_DEMO_MODE ? demoMaterialFlowsApi : realMaterialFlowsApi;
 export const infoFlowsApi = IS_DEMO_MODE ? demoInfoFlowsApi : realInfoFlowsApi;

@@ -22,7 +22,7 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({ error: 'Authentication required' });
+    return res.status(401).json({ error: 'Требуется авторизация' });
   }
 
   try {
@@ -30,18 +30,18 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
     req.user = payload;
     next();
   } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: 'Недействительный или просроченный токен' });
   }
 }
 
 export function requireRole(role: string) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      return res.status(401).json({ error: 'Требуется авторизация' });
     }
 
     if (req.user.role !== role) {
-      return res.status(403).json({ error: 'Insufficient permissions' });
+      return res.status(403).json({ error: 'Недостаточно прав доступа' });
     }
 
     next();

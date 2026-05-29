@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { dashboardApi, vesselCallsApi, infoFlowsApi, containersApi } from '../api';
 import type { DashboardStats, VesselCall, InfoFlowEvent, Container } from '../types';
@@ -41,7 +41,7 @@ export default function DashboardPage() {
       setCargoPreview(containers.slice(0, 5));
       setActiveVesselCalls(
         vesselCallsData.filter((vc) =>
-          ['EXPECTED', 'ARRIVED', 'BERTHED', 'IN_OPERATION'].includes(vc.status)
+          ['EN_ROUTE', 'ARRIVED', 'UNLOADING', 'EXPECTED', 'BERTHED', 'IN_OPERATION'].includes(vc.status)
         )
       );
     } catch (error) {
@@ -118,11 +118,11 @@ export default function DashboardPage() {
         <Card title="Быстрые действия">
           <div className="space-y-2">
             <Link
-              to="/cargo?batch=COAL-2026-0001"
+              to="/cargo?wizard=new"
               className="flex items-center gap-2 p-3 rounded-lg border border-default hover-surface text-sm"
             >
-              <Package className="w-4 h-4 text-blue-500" />
-              Демо-партия COAL-2026-0001
+              <Package className="w-4 h-4 text-green-500" />
+              Новая партия (мастер)
             </Link>
             <Link
               to="/reports"
@@ -144,7 +144,7 @@ export default function DashboardPage() {
           <p className="text-2xl font-bold text-green-600">{stats?.containers ?? 0}</p>
           <p className="text-xs text-muted mt-1">Партий</p>
         </Link>
-        <Link to="/cargo" className="p-4 rounded-lg border border-default hover-surface text-center">
+        <Link to="/vessels?tab=calls" className="p-4 rounded-lg border border-default hover-surface text-center">
           <p className="text-2xl font-bold text-blue-600">{stats?.vesselCallsActive ?? 0}</p>
           <p className="text-xs text-muted mt-1">Судозаходов</p>
         </Link>
@@ -163,7 +163,11 @@ export default function DashboardPage() {
           ) : (
             <div className="space-y-3">
               {activeVesselCalls.slice(0, 4).map((call) => (
-                <div key={call.id} className="flex items-start gap-3 p-2 rounded-lg hover-surface">
+                <Link
+                  key={call.id}
+                  to="/vessels?tab=calls"
+                  className="flex items-start gap-3 p-2 rounded-lg hover-surface"
+                >
                   <Ship className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
                   <div>
                     <p className="font-semibold text-sm">{call.vessel.name}</p>
@@ -173,10 +177,16 @@ export default function DashboardPage() {
                       label={VESSEL_CALL_STATUS_LABELS[call.status]}
                     />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
+          <Link
+            to="/vessels?tab=calls"
+            className="text-sm text-blue-500 hover:underline mt-4 inline-block"
+          >
+            Все судозаходы →
+          </Link>
         </Card>
 
         <Card title="События ИЛС">

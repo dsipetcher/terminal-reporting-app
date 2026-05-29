@@ -2,7 +2,6 @@ import type {
   Container,
   CargoTracking,
   Wagon,
-  TruckVisit,
   VesselCall,
   Warehouse,
   LogisticsOrder,
@@ -16,7 +15,6 @@ export interface CargoProfile {
   container: Container;
   trackings: CargoTracking[];
   wagons: Wagon[];
-  truckVisits: TruckVisit[];
   vesselCall?: VesselCall;
   warehouse?: Warehouse;
   order?: LogisticsOrder;
@@ -31,7 +29,6 @@ export interface CargoProfileInput {
   container: Container;
   trackings: CargoTracking[];
   wagons: Wagon[];
-  truckVisits: TruckVisit[];
   vesselCalls: VesselCall[];
   warehouses: Warehouse[];
   orders: LogisticsOrder[];
@@ -44,7 +41,6 @@ export function buildCargoProfile(input: CargoProfileInput): CargoProfile {
   const { container } = input;
 
   const wagons = input.wagons.filter((w) => w.containerId === container.id);
-  const truckVisits = input.truckVisits.filter((v) => v.containerId === container.id);
   const materialFlows = input.materialFlows.filter(
     (f) => f.containerId === container.id || f.container?.id === container.id
   );
@@ -75,7 +71,6 @@ export function buildCargoProfile(input: CargoProfileInput): CargoProfile {
     container: { ...container, warehouse, vesselCall, logisticsOrder: order },
     trackings,
     wagons,
-    truckVisits,
     vesselCall,
     warehouse,
     order,

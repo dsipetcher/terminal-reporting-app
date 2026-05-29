@@ -82,7 +82,7 @@ export default function ReportsPage() {
     <div className="reports-page">
       <PageHeader
         title="Отчётность ИЛС"
-        subtitle="Составление и выгрузка отчётов · FR-18"
+        subtitle="Составление и выгрузка отчётов"
         action={
           result && (
             <div className="flex gap-2 print:hidden">
@@ -92,7 +92,7 @@ export default function ReportsPage() {
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
               >
                 <Download className="w-4 h-4" />
-                CSV
+                Скачать CSV
               </button>
               <button
                 type="button"

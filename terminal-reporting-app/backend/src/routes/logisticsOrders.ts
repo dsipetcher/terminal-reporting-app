@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../lib/prisma';
 import { logInfoFlow } from '../lib/ils';
+import { deleteOrderUploads } from '../lib/orderDocuments';
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ router.get('/', async (req, res) => {
         counterparty: true,
         vesselCall: { include: { vessel: true, berth: true } },
         containers: { select: { id: true, containerNumber: true, status: true } },
-        _count: { select: { materialFlows: true, infoEvents: true } },
+        _count: { select: { materialFlows: true, infoEvents: true, documents: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -41,6 +42,7 @@ router.get('/:id', async (req, res) => {
         containers: true,
         materialFlows: { include: { container: true }, orderBy: { performedAt: 'desc' } },
         infoEvents: { include: { user: { select: { id: true, username: true } } }, orderBy: { createdAt: 'desc' } },
+        documents: { orderBy: { uploadedAt: 'desc' } },
       },
     });
     if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -217,6 +219,7 @@ router.delete('/:id', async (req, res) => {
     const id = Number(req.params.id);
     await prisma.container.updateMany({ where: { logisticsOrderId: id }, data: { logisticsOrderId: null } });
     await prisma.logisticsOrder.delete({ where: { id } });
+    deleteOrderUploads(id);
     res.status(204).send();
   } catch (error) {
     console.error('Error deleting logistics order:', error);

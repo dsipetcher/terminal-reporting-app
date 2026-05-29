@@ -13,7 +13,6 @@ export const ROUTE_ROLES: Record<string, AppRole[]> = {
   '/counterparties': ['ADMIN', 'PLANNER'],
   '/warehouses': ['ADMIN', 'PLANNER', 'WAREHOUSE'],
   '/wagons': ['ADMIN', 'DISPATCHER'],
-  '/trucks': ['ADMIN', 'DISPATCHER'],
   '/vessels': ['ADMIN', 'DISPATCHER'],
   '/vessel-calls': ['ADMIN', 'DISPATCHER'],
   '/berths': ['ADMIN', 'DISPATCHER'],

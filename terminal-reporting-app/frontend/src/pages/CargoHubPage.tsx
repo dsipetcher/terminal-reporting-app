@@ -4,7 +4,6 @@ import {
   containersApi,
   logisticsRoutesApi,
   wagonsApi,
-  truckVisitsApi,
   vesselCallsApi,
   warehousesApi,
   logisticsOrdersApi,
@@ -18,22 +17,23 @@ import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { StatusBadge } from '../components/StatusBadge';
 import { CargoDetailPanel } from '../components/cargo/CargoDetailPanel';
+import { CargoOnboardingWizard } from '../components/cargo/CargoOnboardingWizard';
 import {
   CARGO_BATCH_STATUS_LABELS,
   CARGO_CATEGORY_LABELS,
   CARGO_GRADE_LABELS,
   EXPORT_ROUTE_CHAIN,
 } from '../utils';
-import { Search, Package, Plus } from 'lucide-react';
+import { Search, Package, Plus, Route } from 'lucide-react';
 
 export default function CargoHubPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const batchFromUrl = searchParams.get('batch');
+  const wizardParam = searchParams.get('wizard');
 
   const [cargoList, setCargoList] = useState<Container[]>([]);
   const [trackingResult, setTrackingResult] = useState<ContainerTrackingResult | null>(null);
   const [wagons, setWagons] = useState<Awaited<ReturnType<typeof wagonsApi.getAll>>>([]);
-  const [truckVisits, setTruckVisits] = useState<Awaited<ReturnType<typeof truckVisitsApi.getAll>>>([]);
   const [vesselCalls, setVesselCalls] = useState<Awaited<ReturnType<typeof vesselCallsApi.getAll>>>([]);
   const [warehouses, setWarehouses] = useState<Awaited<ReturnType<typeof warehousesApi.getAll>>>([]);
   const [orders, setOrders] = useState<Awaited<ReturnType<typeof logisticsOrdersApi.getAll>>>([]);
@@ -47,14 +47,14 @@ export default function CargoHubPage() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchLoading, setSearchLoading] = useState(false);
   const [advancing, setAdvancing] = useState<number | null>(null);
-  const [addRouteId, setAddRouteId] = useState('');
+  const [wizardOpen, setWizardOpen] = useState(wizardParam === 'new');
+  const [wizardMode, setWizardMode] = useState<'create' | 'track'>('create');
 
   const loadBaseData = async () => {
     const [
       containersData,
       routesData,
       wagonsData,
-      visitsData,
       callsData,
       warehousesData,
       ordersData,
@@ -64,7 +64,6 @@ export default function CargoHubPage() {
       containersApi.getAll(),
       logisticsRoutesApi.getAll(),
       wagonsApi.getAll(),
-      truckVisitsApi.getAll(),
       vesselCallsApi.getAll(),
       warehousesApi.getAll(),
       logisticsOrdersApi.getAll(),
@@ -75,7 +74,6 @@ export default function CargoHubPage() {
     setCargoList(containersData);
     setRoutes(routesData);
     setWagons(wagonsData);
-    setTruckVisits(visitsData);
     setVesselCalls(callsData);
     setWarehouses(warehousesData);
     setOrders(ordersData);
@@ -119,11 +117,18 @@ export default function CargoHubPage() {
     if (loading || cargoList.length === 0) return;
     if (batchFromUrl) {
       selectBatch(batchFromUrl);
-    } else if (!selectedBatch) {
+    } else if (!selectedBatch && wizardParam !== 'new') {
       selectBatch(cargoList[0].containerNumber);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, cargoList.length, batchFromUrl]);
+
+  useEffect(() => {
+    if (wizardParam === 'new') {
+      setWizardMode('create');
+      setWizardOpen(true);
+    }
+  }, [wizardParam]);
 
   const activeContainer =
     trackingResult?.container ??
@@ -135,7 +140,6 @@ export default function CargoHubPage() {
       container: activeContainer,
       trackings: trackingResult?.trackings ?? [],
       wagons,
-      truckVisits,
       vesselCalls,
       warehouses,
       orders,
@@ -147,7 +151,6 @@ export default function CargoHubPage() {
     activeContainer,
     trackingResult,
     wagons,
-    truckVisits,
     vesselCalls,
     warehouses,
     orders,
@@ -185,16 +188,21 @@ export default function CargoHubPage() {
     }
   };
 
-  const handleAddToRoute = async () => {
-    if (!activeContainer || !addRouteId) return;
-    try {
-      await logisticsRoutesApi.addTracking(Number(addRouteId), activeContainer.id);
-      setAddRouteId('');
-      await loadBaseData();
-      await selectBatch(activeContainer.containerNumber);
-    } catch (e) {
-      console.error(e);
+  const openWizard = (mode: 'create' | 'track') => {
+    setWizardMode(mode);
+    setWizardOpen(true);
+  };
+
+  const closeWizard = () => {
+    setWizardOpen(false);
+    if (wizardParam) {
+      setSearchParams(selectedBatch ? { batch: selectedBatch } : {}, { replace: true });
     }
+  };
+
+  const handleWizardComplete = async (batchNumber: string) => {
+    await loadBaseData();
+    await selectBatch(batchNumber);
   };
 
   if (loading) return <LoadingSpinner text="Загрузка партий груза..." />;
@@ -205,21 +213,22 @@ export default function CargoHubPage() {
         title="Партии груза"
         subtitle={`Объект учёта ИЛС — партия. ${EXPORT_ROUTE_CHAIN}`}
         action={
-          <Link
-            to="/cargo-lots"
-            className="flex items-center gap-2 px-3 py-2 text-sm border border-default rounded-lg hover-surface"
+          <button
+            type="button"
+            onClick={() => openWizard('create')}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <Plus className="w-4 h-4" />
             Новая партия
-          </Link>
+          </button>
         }
       />
 
       <Card className="mb-6 border border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20">
         <p className="text-sm text-secondary">
-          Выберите партию — в карточке отображаются все связанные сущности:{' '}
-          <strong className="text-primary">отправление, ж/д и авто, склад, судно, порт назначения</strong>.
-          Транспорт и инфраструктура — контекст груза, а не отдельные разделы учёта.
+          Выберите партию или запустите{' '}
+          <strong className="text-primary">мастер отслеживания</strong>: партия → маршрут → привязка
+          этапов (вагоны, склад, судно) → запуск. Вся информация — в карточке груза.
         </p>
       </Card>
 
@@ -263,7 +272,7 @@ export default function CargoHubPage() {
             </select>
 
             <p className="text-xs text-muted mb-2">{filteredList.length} партий</p>
-            <ul className="space-y-2 max-h-[60vh] overflow-y-auto">
+            <ul className="space-y-2 max-h-[55vh] overflow-y-auto">
               {filteredList.map((cargo) => (
                 <li key={cargo.id}>
                   <button
@@ -295,6 +304,13 @@ export default function CargoHubPage() {
               ))}
             </ul>
           </Card>
+
+          <Link
+            to="/cargo-lots"
+            className="block text-center text-xs text-muted hover:text-blue-500"
+          >
+            Расширенная регистрация партий →
+          </Link>
         </div>
 
         <div className="xl:col-span-8">
@@ -318,15 +334,24 @@ export default function CargoHubPage() {
                         ? ` · ${profile.container.quantityTons} т`
                         : ''}
                     </p>
-                    {profile.container.cargoDescription && (
-                      <p className="text-xs text-subtle mt-1">{profile.container.cargoDescription}</p>
-                    )}
                   </div>
                 </div>
-                <StatusBadge
-                  status={profile.container.status}
-                  label={CARGO_BATCH_STATUS_LABELS[profile.container.status]}
-                />
+                <div className="flex flex-wrap gap-2">
+                  {!profile.primaryTracking && (
+                    <button
+                      type="button"
+                      onClick={() => openWizard('track')}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    >
+                      <Route className="w-4 h-4" />
+                      На отслеживание
+                    </button>
+                  )}
+                  <StatusBadge
+                    status={profile.container.status}
+                    label={CARGO_BATCH_STATUS_LABELS[profile.container.status]}
+                  />
+                </div>
               </div>
 
               {profile.primaryTracking?.currentStage && (
@@ -336,9 +361,6 @@ export default function CargoHubPage() {
                     <strong className="text-primary">
                       {profile.primaryTracking.currentStage.locationName}
                     </strong>
-                    {profile.primaryTracking.notes && (
-                      <span className="text-muted"> · {profile.primaryTracking.notes}</span>
-                    )}
                   </p>
                 </div>
               )}
@@ -347,24 +369,38 @@ export default function CargoHubPage() {
                 profile={profile}
                 onAdvance={handleAdvance}
                 advancing={advancing}
-                onAddToRoute={handleAddToRoute}
-                addRouteId={addRouteId}
-                onAddRouteIdChange={setAddRouteId}
+                onOpenWizard={() => openWizard('track')}
               />
             </Card>
           ) : (
             <Card>
               <div className="text-center py-16">
                 <Package className="w-12 h-12 mx-auto text-muted mb-4" />
-                <p className="text-secondary font-medium">Выберите партию груза</p>
-                <p className="text-sm text-subtle mt-2">
-                  Вся информация о маршруте, транспорте и терминале — в одной карточке
-                </p>
+                <p className="text-secondary font-medium">Выберите партию или создайте новую</p>
+                <button
+                  type="button"
+                  onClick={() => openWizard('create')}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                >
+                  Мастер новой партии
+                </button>
               </div>
             </Card>
           )}
         </div>
       </div>
+
+      <CargoOnboardingWizard
+        open={wizardOpen}
+        onClose={closeWizard}
+        onComplete={handleWizardComplete}
+        mode={wizardMode}
+        existingContainer={wizardMode === 'track' ? activeContainer : undefined}
+        routes={routes}
+        warehouses={warehouses}
+        wagons={wagons}
+        vesselCalls={vesselCalls}
+      />
     </div>
   );
 }

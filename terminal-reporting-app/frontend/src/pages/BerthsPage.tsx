@@ -1,11 +1,14 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { berthsApi } from '../api';
 import type { Berth } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EntityActions } from '../components/EntityActions';
-import { BERTH_TYPE_LABELS } from '../utils';
+import { BERTH_TYPE_LABELS, VESSEL_CALL_STATUS_LABELS, formatBerthLabel } from '../utils';
+import { StatusBadge } from '../components/StatusBadge';
+import { useEntityHighlight } from '../hooks/useEntityHighlight';
+import { entityDomId } from '../lib/entityLinks';
 
 const emptyForm = {
   number: '',
@@ -27,6 +30,8 @@ export default function BerthsPage() {
   useEffect(() => {
     loadBerths();
   }, []);
+
+  const { highlightClass } = useEntityHighlight(berths.map((b) => b.id));
 
   const loadBerths = async () => {
     try {
@@ -219,11 +224,15 @@ export default function BerthsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {berths.map((berth) => (
-          <Card key={berth.id} className="hover:shadow-lg transition-shadow">
+          <Card
+            key={berth.id}
+            id={entityDomId(berth.id)}
+            className={`hover:shadow-lg transition-shadow ${highlightClass(berth.id)}`}
+          >
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-2xl font-bold text-primary">№{berth.number}</h3>
-                {berth.name && <p className="text-sm text-muted">{berth.name}</p>}
+                <h3 className="text-2xl font-bold text-primary">{formatBerthLabel(berth)}</h3>
+                <p className="text-sm text-muted">{BERTH_TYPE_LABELS[berth.berthType]}</p>
               </div>
               <div className="flex items-start gap-2">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -247,9 +256,19 @@ export default function BerthsPage() {
             {berth.vesselCalls && berth.vesselCalls.length > 0 && (
               <div className="mt-4 pt-4 border-t border-default">
                 <p className="text-sm font-medium text-secondary mb-2">Текущие суда:</p>
-                {berth.vesselCalls.map((vc) => (
-                  <p key={vc.id} className="text-sm text-muted">🚢 {vc.vessel.name}</p>
-                ))}
+                <ul className="space-y-2">
+                  {berth.vesselCalls.map((vc) => (
+                    <li key={vc.id} className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="text-muted">
+                        🚢 {vc.vessel.name} · рейс {vc.voyageNumber}
+                      </span>
+                      <StatusBadge
+                        status={vc.status}
+                        label={VESSEL_CALL_STATUS_LABELS[vc.status]}
+                      />
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </Card>

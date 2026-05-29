@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { Network, Menu, X, LogOut, Moon, Sun } from 'lucide-react';
@@ -9,11 +9,9 @@ import { SidebarNav } from './components/SidebarNav';
 
 import DashboardPage from './pages/DashboardPage';
 import ReportsPage from './pages/ReportsPage';
-import VesselCallsPage from './pages/VesselCallsPage';
 import VesselsPage from './pages/VesselsPage';
 import BerthsPage from './pages/BerthsPage';
 import ContainersPage from './pages/ContainersPage';
-import TrucksPage from './pages/TrucksPage';
 import WagonsPage from './pages/WagonsPage';
 import WarehousesPage from './pages/WarehousesPage';
 import UsersPage from './pages/UsersPage';
@@ -122,11 +120,11 @@ function AppLayout() {
             <Route path="/" element={<Guard><DashboardPage /></Guard>} />
             <Route path="/reports" element={<Guard><ReportsPage /></Guard>} />
             <Route path="/vessels" element={<Guard><VesselsPage /></Guard>} />
-            <Route path="/vessel-calls" element={<Guard><VesselCallsPage /></Guard>} />
+            <Route path="/vessel-calls" element={<Navigate to="/vessels?tab=calls" replace />} />
             <Route path="/berths" element={<Guard><BerthsPage /></Guard>} />
             <Route path="/containers" element={<Navigate to="/cargo-lots" replace />} />
             <Route path="/cargo-lots" element={<Guard><ContainersPage /></Guard>} />
-            <Route path="/trucks" element={<Guard><TrucksPage /></Guard>} />
+            <Route path="/trucks" element={<Navigate to="/cargo" replace />} />
             <Route path="/wagons" element={<Guard><WagonsPage /></Guard>} />
             <Route path="/warehouses" element={<Guard><WarehousesPage /></Guard>} />
             <Route path="/logistics-orders" element={<Guard><LogisticsOrdersPage /></Guard>} />

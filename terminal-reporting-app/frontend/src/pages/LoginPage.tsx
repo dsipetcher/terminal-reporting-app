@@ -81,9 +81,9 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-xs text-slate-500 text-center leading-relaxed">
-          Демо (ТЗ §9): admin/admin · planner/planner · dispatcher/dispatcher · warehouse/warehouse
+          Демо-доступ: admin/admin · planner/planner · dispatcher/dispatcher · warehouse/warehouse
           <br />
-          Партия для отслеживания: COAL-2026-0001 · маршрут RT-EXPORT-COAL-001
+          Партия для отслеживания: COAL-2026-0001 · маршрут RT-COAL-001
         </p>
       </div>
     </div>

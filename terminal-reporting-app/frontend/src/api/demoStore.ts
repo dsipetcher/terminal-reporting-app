@@ -6,14 +6,14 @@ import type {
   CreateUserRequest,
   UpdateUserRequest,
   DashboardStats,
-  Truck,
-  TruckVisit,
   User,
   Vessel,
   VesselCall,
+  TrainConsist,
   Wagon,
   Warehouse,
   LogisticsOrder,
+  LogisticsOrderDocument,
   MaterialFlow,
   InfoFlowEvent,
   LogisticsRoute,
@@ -24,12 +24,25 @@ import type {
   PortDirectory,
   CargoDirectory,
 } from '../types';
-import { cargoStatusFromStageType } from '../utils';
+import { cargoStatusFromStageType, syncDemoTransportWithStage, releaseDemoTransportAfterDelivery, formatPortCode, validateWagonContainerAssignment, validateContainerVesselAssignment } from '../utils';
+import {
+  demoContainers,
+  demoWagons,
+  demoTrainConsists,
+  demoLogisticsOrders,
+  demoOrderDocuments,
+  demoRouteStages,
+  demoLogisticsRoutes,
+  demoCargoTrackings,
+  demoCargoTrackingEvents,
+  demoMaterialFlows,
+  buildDemoVesselCalls,
+} from './mockCargoSeed';
 import { simulateNetwork } from './config';
 
 const now = new Date().toISOString();
 
-let nextId = 100;
+let nextId = 200;
 
 const vessels: Vessel[] = [
   {
@@ -60,7 +73,7 @@ const berths: Berth[] = [
   {
     id: 1,
     number: 'BULK-1',
-    name: 'Причал навалочных (уголь)',
+    name: 'Причал навалочных грузов (уголь)',
     berthType: 'BULK' as Berth['berthType'],
     length: 280,
     depth: 15,
@@ -91,8 +104,8 @@ const warehouses: Warehouse[] = [
     capacity: 120000,
     warehouseType: 'COAL_YARD' as Warehouse['warehouseType'],
     zone: 'Уголь',
-    load: 4200,
-    _count: { wagons: 1, containers: 1 },
+    load: 15800,
+    _count: { wagons: 6, containers: 6 },
     createdAt: now,
     updatedAt: now,
   },
@@ -103,8 +116,8 @@ const warehouses: Warehouse[] = [
     capacity: 80000,
     warehouseType: 'OIL_TANK' as Warehouse['warehouseType'],
     zone: 'Нефть',
-    load: 0,
-    _count: { wagons: 0, containers: 0 },
+    load: 14600,
+    _count: { wagons: 5, containers: 5 },
     createdAt: now,
     updatedAt: now,
   },
@@ -123,10 +136,11 @@ const counterparties: Counterparty[] = [
   },
   {
     id: 2,
-    code: 'AUTO-CARR',
-    name: 'ООО «ЮгТрансАвто»',
-    partnerType: 'CARRIER',
-    _count: { orders: 0 },
+    code: 'LUKOIL-NPZ',
+    name: 'ЛУКОЙЛ-НПЗ',
+    partnerType: 'CLIENT',
+    contact: 'Поставщик нефтепродуктов',
+    _count: { orders: 1 },
     createdAt: now,
     updatedAt: now,
   },
@@ -155,216 +169,79 @@ const cargoDirectory: CargoDirectory[] = [
   { id: 4, code: 'OIL-FUEL', name: 'Мазут / топливо', category: 'LIQUID' },
 ];
 
-const logisticsOrders: LogisticsOrder[] = [
+const logisticsOrders: LogisticsOrder[] = [...demoLogisticsOrders];
+const orderDocuments: LogisticsOrderDocument[] = [...demoOrderDocuments];
+/** Demo-only binary payloads keyed by document id */
+const orderDocumentBlobs = new Map<number, Blob>(
+  demoOrderDocuments.map((doc) => [
+    doc.id,
+    new Blob(
+      [
+        doc.documentType === 'CONTRACT'
+          ? `Демо-договор для заказа #${doc.orderId}\nФайл: ${doc.fileName}`
+          : doc.documentType === 'WAYBILL'
+            ? `Демо-коносамент: ${doc.fileName}`
+            : `Демо-документ: ${doc.fileName}`,
+      ],
+      { type: doc.mimeType ?? 'text/plain' }
+    ),
+  ])
+);
+
+const routeStages: RouteStage[] = [...demoRouteStages];
+
+const logisticsRoutes: LogisticsRoute[] = [...demoLogisticsRoutes];
+
+const cargoTrackingEvents: CargoTrackingEvent[] = [...demoCargoTrackingEvents];
+
+const cargoTrackings: CargoTracking[] = [...demoCargoTrackings];
+
+const materialFlows: MaterialFlow[] = [...demoMaterialFlows];
+
+const infoFlows: InfoFlowEvent[] = [
   {
     id: 1,
-    orderNumber: 'ILS-DEMO-0001',
-    orderType: 'EXPORT_BULK',
-    managementLevel: 'DISPATCH',
-    status: 'IN_PROGRESS',
-    counterpartyId: 1,
-    counterparty: counterparties[0],
-    supplierName: 'АО «Кузбассуголь»',
-    cargoDescription: 'Уголь каменный 4200 т',
-    cargoWeight: 4200,
-    origin: 'Кемерово (поставщик)',
-    destination: 'TRMER',
-    plannedStart: new Date(Date.now() - 86400000 * 2).toISOString(),
-    plannedEnd: new Date(Date.now() + 86400000 * 5).toISOString(),
-    actualStart: new Date(Date.now() - 86400000).toISOString(),
-    vesselCallId: 1,
-    notes: 'Экспорт: суша → склад → балкер → Мерсин',
-    _count: { materialFlows: 2, infoEvents: 3 },
-    createdAt: now,
-    updatedAt: now,
-  },
-];
-
-const routeStages: RouteStage[] = [
-  { id: 1, routeId: 1, sequence: 1, stageType: 'SUPPLIER', locationCode: 'KUZBASS', locationName: 'АО «Кузбассуголь», Кемерово', transportMode: 'ROAD', status: 'COMPLETED', actualAt: new Date(Date.now() - 86400000 * 4).toISOString(), createdAt: now, updatedAt: now },
-  { id: 2, routeId: 1, sequence: 2, stageType: 'RAIL_STATION', locationCode: 'RZD-12', locationName: 'Ж/д путь 12, разгрузка', transportMode: 'RAIL', status: 'COMPLETED', actualAt: new Date(Date.now() - 86400000 * 2).toISOString(), createdAt: now, updatedAt: now },
-  { id: 3, routeId: 1, sequence: 3, stageType: 'ROAD_GATE', locationCode: 'GATE-1', locationName: 'Автовесовая терминала', transportMode: 'ROAD', status: 'COMPLETED', actualAt: new Date(Date.now() - 86400000).toISOString(), createdAt: now, updatedAt: now },
-  { id: 4, routeId: 1, sequence: 4, stageType: 'WAREHOUSE', locationCode: 'COAL-YARD-1', locationName: 'Склад угля, сектор A-3', transportMode: 'WAREHOUSE', status: 'CURRENT', actualAt: new Date(Date.now() - 43200000).toISOString(), createdAt: now, updatedAt: now },
-  { id: 5, routeId: 1, sequence: 5, stageType: 'BERTH', locationCode: 'BULK-1', locationName: 'Причал BULK-1', transportMode: 'SEA', status: 'PENDING', createdAt: now, updatedAt: now },
-  { id: 6, routeId: 1, sequence: 6, stageType: 'SHIP', locationCode: 'VOLGOBALT', locationName: 'Балкер VOLGOBALT-204 / 204N', transportMode: 'SEA', status: 'PENDING', createdAt: now, updatedAt: now },
-  { id: 7, routeId: 1, sequence: 7, stageType: 'PORT', locationCode: 'TRMER', locationName: 'Порт Мерсин (конечный)', transportMode: 'SEA', status: 'PENDING', createdAt: now, updatedAt: now },
-];
-
-const logisticsRoutes: LogisticsRoute[] = [
-  {
-    id: 1,
-    routeNumber: 'RT-EXPORT-COAL-001',
-    name: 'Уголь: поставщик → терминал → Мерсин',
+    ilsFunction: 'PLANNING',
+    eventType: 'CREATE',
+    entityType: 'LOGISTICS_ORDER',
+    entityId: 1,
     orderId: 1,
-    order: { id: 1, orderNumber: 'ILS-DEMO-0001', status: 'IN_PROGRESS' },
-    origin: 'KUZBASS',
-    destination: 'TRMER',
-    routeKind: 'EXPORT',
-    status: 'ACTIVE',
-    stages: routeStages,
-    _count: { trackings: 1, stages: 7 },
-    createdAt: now,
-    updatedAt: now,
-  },
-];
-
-const cargoTrackingEvents: CargoTrackingEvent[] = [
-  { id: 1, trackingId: 1, toStageId: 1, eventAt: new Date(Date.now() - 86400000 * 4).toISOString(), description: 'Отгрузка у поставщика', createdAt: now },
-  { id: 2, trackingId: 1, fromStageId: 1, toStageId: 2, eventAt: new Date(Date.now() - 86400000 * 2).toISOString(), description: 'Прибытие ж/д состава', createdAt: now },
-  { id: 3, trackingId: 1, fromStageId: 2, toStageId: 3, eventAt: new Date(Date.now() - 86400000).toISOString(), description: 'Прибытие автотранспорта', createdAt: now },
-  { id: 4, trackingId: 1, fromStageId: 3, toStageId: 4, eventAt: new Date(Date.now() - 43200000).toISOString(), description: 'Разгрузка на склад COAL-YARD-1', createdAt: now },
-];
-
-const cargoTrackings: CargoTracking[] = [
-  {
-    id: 1,
-    containerId: 1,
-    container: { id: 1, containerNumber: 'COAL-2026-0001', status: 'IN_STORAGE' as Container['status'] },
-    routeId: 1,
-    route: logisticsRoutes[0],
-    currentStageId: 4,
-    currentStage: routeStages[3],
-    status: 'AT_STAGE',
-    lastEventAt: new Date(Date.now() - 43200000).toISOString(),
-    notes: 'На складе, ожидает погрузку на балкер',
-    events: [...cargoTrackingEvents],
-    createdAt: now,
-    updatedAt: now,
-  },
-];
-
-const materialFlows: MaterialFlow[] = [
-  {
-    id: 1,
-    orderId: 1,
-    order: { id: 1, orderNumber: 'ILS-DEMO-0001' },
-    flowType: 'ARRIVAL',
-    transportMode: 'RAIL',
-    quantity: 4200,
-    unit: 'TON',
-    fromLocation: 'Кузбасс',
-    toLocation: 'Ж/д путь 12',
-    containerId: 1,
-    container: { id: 1, containerNumber: 'COAL-2026-0001' },
-    performedAt: new Date(Date.now() - 86400000).toISOString(),
-    description: 'Прибытие угля по ж/д',
-    createdAt: now,
+    order: { id: 1, orderNumber: 'ILS-2026-COAL' },
+    message: 'Seed: заказ на экспорт угля (5 партий)',
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
   },
   {
     id: 2,
+    ilsFunction: 'PLANNING',
+    eventType: 'CREATE',
+    entityType: 'LOGISTICS_ORDER',
+    entityId: 2,
+    orderId: 2,
+    message: 'Seed: заказ на экспорт нефти (5 партий)',
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    id: 3,
+    ilsFunction: 'CONTROL',
+    eventType: 'CREATE',
+    entityType: 'CARGO_TRACKING',
+    entityId: 1,
     orderId: 1,
-    order: { id: 1, orderNumber: 'ILS-DEMO-0001' },
-    flowType: 'STORAGE',
-    transportMode: 'WAREHOUSE',
-    quantity: 4200,
-    unit: 'TON',
-    fromLocation: 'Ж/д фронт',
-    toLocation: 'COAL-YARD-1 / A-3',
-    containerId: 1,
-    container: { id: 1, containerNumber: 'COAL-2026-0001' },
-    performedAt: new Date().toISOString(),
-    description: 'Разгрузка на склад терминала',
-    createdAt: now,
+    message: '10 партий груза на маршрутах отслеживания',
+    createdAt: new Date().toISOString(),
   },
 ];
 
-const infoFlows: InfoFlowEvent[] = [
-  { id: 1, ilsFunction: 'PLANNING', eventType: 'CREATE', entityType: 'LOGISTICS_ORDER', entityId: 1, orderId: 1, order: { id: 1, orderNumber: 'ILS-DEMO-0001' }, message: 'Заказ на экспорт угля', createdAt: new Date(Date.now() - 86400000 * 3).toISOString() },
-  { id: 2, ilsFunction: 'PLANNING', eventType: 'CREATE', entityType: 'LOGISTICS_ROUTE', entityId: 1, orderId: 1, message: 'Маршрут RT-EXPORT-COAL-001 (7 этапов)', createdAt: new Date(Date.now() - 86400000 * 2).toISOString() },
-  { id: 3, ilsFunction: 'CONTROL', eventType: 'CREATE', entityType: 'CARGO_TRACKING', entityId: 1, orderId: 1, message: 'Партия COAL-2026-0001 на отслеживании', createdAt: new Date().toISOString() },
-];
+const containers: Container[] = [...demoContainers];
 
-const containers: Container[] = [
-  {
-    id: 1,
-    containerNumber: 'COAL-2026-0001',
-    containerType: 'COAL_ANTHRACITE' as Container['containerType'],
-    cargoCategory: 'COAL',
-    supplierName: 'АО «Кузбассуголь»',
-    quantityTons: 4200,
-    quantityUnit: 'TON',
-    status: 'IN_STORAGE' as Container['status'],
-    cargoDescription: 'Уголь каменный марки Д',
-    grossWeight: 4200,
-    warehouseId: 1,
-    location: 'A-3',
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'TRMER',
-    vesselCallId: 1,
-    logisticsOrderId: 1,
-    logisticsOrder: { id: 1, orderNumber: 'ILS-DEMO-0001', status: 'IN_PROGRESS' },
-    createdAt: now,
-    updatedAt: now,
-  },
-];
+const vesselCalls: VesselCall[] = buildDemoVesselCalls(vessels, berths);
 
-const vesselCalls: VesselCall[] = [
-  {
-    id: 1,
-    vesselId: 1,
-    vessel: vessels[0],
-    voyageNumber: '204N',
-    eta: new Date(Date.now() + 86400000).toISOString(),
-    etd: new Date(Date.now() + 172800000).toISOString(),
-    berthId: 1,
-    berth: berths[0],
-    status: 'BERTHED' as VesselCall['status'],
-    agent: 'Novorossiysk Agency',
-    purpose: 'Погрузка угля на экспорт',
-    _count: { containers: 1 },
-    createdAt: now,
-    updatedAt: now,
-  },
-];
+const wagons: Wagon[] = [...demoWagons];
 
-const wagons: Wagon[] = [
-  {
-    id: 1,
-    number: '53467821',
-    wagonType: 'GONDOLA' as Wagon['wagonType'],
-    cargo: 'Уголь каменный',
-    cargoWeight: 68,
-    warehouseId: 1,
-    track: 'Путь 12',
-    trainNumber: '2845',
-    arrivalAt: new Date(Date.now() - 86400000).toISOString(),
-    status: 'DEPARTED' as Wagon['status'],
-    containerId: 1,
-    createdAt: now,
-    updatedAt: now,
-  },
-];
-
-const trucks: Truck[] = [
-  {
-    id: 1,
-    licensePlate: 'K123УГ177',
-    truckType: 'DUMP_TRUCK' as Truck['truckType'],
-    carrier: 'ЮгТрансАвто',
-    driverName: 'Петров А.В.',
-    _count: { visits: 1 },
-    createdAt: now,
-    updatedAt: now,
-  },
-];
-
-const truckVisits: TruckVisit[] = [
-  {
-    id: 1,
-    truckId: 1,
-    truck: trucks[0],
-    timeSlot: new Date(Date.now() - 3600000).toISOString(),
-    purpose: 'Доставка угля на терминал',
-    gateNumber: 'Автовесовая-1',
-    status: 'COMPLETED' as TruckVisit['status'],
-    containerId: 1,
-    createdAt: now,
-    updatedAt: now,
-  },
-];
+const trainConsists: TrainConsist[] = [...demoTrainConsists];
 
 function getDashboardStats(): DashboardStats {
-  const activeStatuses = ['EXPECTED', 'ARRIVED', 'BERTHED', 'IN_OPERATION'];
+  const activeStatuses = ['EN_ROUTE', 'ARRIVED', 'UNLOADING', 'EXPECTED', 'BERTHED', 'IN_OPERATION'];
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   return {
@@ -372,7 +249,6 @@ function getDashboardStats(): DashboardStats {
     vesselCallsActive: vesselCalls.filter((call) => activeStatuses.includes(call.status)).length,
     containers: containers.length,
     wagons: wagons.length,
-    trucks: trucks.length,
     warehouses: warehouses.length,
     ordersTotal: logisticsOrders.length,
     ordersPlanning: logisticsOrders.filter((o) => o.managementLevel === 'PLANNING').length,
@@ -411,7 +287,66 @@ function attachOrderRelations(order: LogisticsOrder): LogisticsOrder {
     _count: order._count || {
       materialFlows: materialFlows.filter((f) => f.orderId === order.id).length,
       infoEvents: infoFlows.filter((e) => e.orderId === order.id).length,
+      documents: orderDocuments.filter((d) => d.orderId === order.id).length,
     },
+  };
+}
+
+function attachContainerRelations(container: Container): Container {
+  const warehouse = container.warehouseId
+    ? warehouses.find((w) => w.id === container.warehouseId)
+    : undefined;
+  const vesselCall = container.vesselCallId
+    ? vesselCalls.find((vc) => vc.id === container.vesselCallId)
+    : undefined;
+  const logisticsOrder = container.logisticsOrderId
+    ? logisticsOrders.find((o) => o.id === container.logisticsOrderId)
+    : undefined;
+  return {
+    ...container,
+    warehouse: warehouse
+      ? ({ id: warehouse.id, number: warehouse.number, name: warehouse.name } as Warehouse)
+      : undefined,
+    vesselCall: vesselCall
+      ? {
+          ...vesselCall,
+          vessel: vessels.find((v) => v.id === vesselCall.vesselId) ?? vesselCall.vessel,
+        }
+      : undefined,
+    logisticsOrder: logisticsOrder
+      ? { id: logisticsOrder.id, orderNumber: logisticsOrder.orderNumber, status: logisticsOrder.status }
+      : container.logisticsOrder,
+  };
+}
+
+function attachWagonRelations(wagon: Wagon): Wagon {
+  const warehouse = wagon.warehouseId
+    ? warehouses.find((w) => w.id === wagon.warehouseId)
+    : undefined;
+  const container = wagon.containerId
+    ? containers.find((c) => c.id === wagon.containerId)
+    : undefined;
+  const trainConsist = wagon.trainConsistId
+    ? trainConsists.find((c) => c.id === wagon.trainConsistId)
+    : undefined;
+  return {
+    ...wagon,
+    warehouse: warehouse
+      ? ({ id: warehouse.id, number: warehouse.number, name: warehouse.name } as Warehouse)
+      : undefined,
+    container: container
+      ? ({ id: container.id, containerNumber: container.containerNumber } as Container)
+      : undefined,
+    trainConsist,
+  };
+}
+
+function attachTrainConsistRelations(consist: TrainConsist): TrainConsist {
+  const linked = wagons.filter((w) => w.trainConsistId === consist.id).map(attachWagonRelations);
+  return {
+    ...consist,
+    wagons: linked,
+    _count: { wagons: linked.length },
   };
 }
 
@@ -471,6 +406,13 @@ function syncDemoCargoStatus(containerId: number, stageType: string) {
     status: cargoStatusFromStageType(stageType) as Container['status'],
     updatedAt: now,
   };
+  syncDemoTransportWithStage(containerId, stageType, {
+    wagons,
+    trainConsists,
+    containers,
+    vesselCalls,
+    now,
+  });
 }
 
 function demoAdvanceTracking(trackingId: number): CargoTracking {
@@ -496,6 +438,22 @@ function demoAdvanceTracking(trackingId: number): CargoTracking {
     if (ci >= 0) {
       containers[ci] = { ...containers[ci], status: 'DELIVERED', updatedAt: now };
     }
+    syncDemoTransportWithStage(tracking.containerId, 'DELIVERED', {
+      wagons,
+      trainConsists,
+      containers,
+      vesselCalls,
+      now,
+    });
+    releaseDemoTransportAfterDelivery(tracking.containerId, {
+      containers,
+      wagons,
+      vesselCalls,
+      vessels,
+      routeStages,
+      cargoTrackings,
+      logisticsOrders,
+    });
     cargoTrackingEvents.unshift({
       id: nextId++,
       trackingId,
@@ -617,7 +575,7 @@ export const demoVesselCallsApi = {
       eta: data.eta || now,
       etd: data.etd,
       berthId: data.berthId,
-      status: (data.status || 'EXPECTED') as VesselCall['status'],
+      status: (data.status || 'EN_ROUTE') as VesselCall['status'],
       agent: data.agent,
       purpose: data.purpose,
       createdAt: now,
@@ -633,11 +591,19 @@ export const demoVesselCallsApi = {
   },
   updateStatus: (id: number, status: string, berthId?: number) => {
     const index = vesselCalls.findIndex((item) => item.id === id);
+    const normalized =
+      status === 'EXPECTED'
+        ? 'EN_ROUTE'
+        : status === 'BERTHED'
+          ? 'ARRIVED'
+          : status === 'IN_OPERATION'
+            ? 'UNLOADING'
+            : status;
     const update: Partial<VesselCall> = {
-      status: status as VesselCall['status'],
+      status: normalized as VesselCall['status'],
       updatedAt: now,
     };
-    if (status === 'BERTHED' && berthId) {
+    if (normalized === 'ARRIVED' && berthId) {
       update.berthId = berthId;
     }
     vesselCalls[index] = attachVesselCallRelations({
@@ -654,8 +620,28 @@ export const demoVesselCallsApi = {
 };
 
 export const demoBerthsApi = {
-  getAll: () => simulateNetwork([...berths]),
-  getById: (id: number) => simulateNetwork(berths.find((item) => item.id === id)!),
+  getAll: () =>
+    simulateNetwork(
+      berths.map((berth) => ({
+        ...berth,
+        vesselCalls: vesselCalls
+          .filter(
+            (vc) =>
+              vc.berthId === berth.id &&
+              (vc.status === 'ARRIVED' || vc.status === 'UNLOADING')
+          )
+          .map(attachVesselCallRelations),
+      }))
+    ),
+  getById: (id: number) => {
+    const berth = berths.find((item) => item.id === id)!;
+    return simulateNetwork({
+      ...berth,
+      vesselCalls: vesselCalls
+        .filter((vc) => vc.berthId === id)
+        .map(attachVesselCallRelations),
+    });
+  },
   create: (data: Partial<Berth>) => {
     const item: Berth = {
       id: nextId++,
@@ -684,12 +670,21 @@ export const demoBerthsApi = {
 };
 
 export const demoContainersApi = {
-  getAll: () => simulateNetwork([...containers]),
-  getById: (id: number) => simulateNetwork(containers.find((item) => item.id === id)!),
+  getAll: () => simulateNetwork(containers.map(attachContainerRelations)),
+  getById: (id: number) =>
+    simulateNetwork(attachContainerRelations(containers.find((item) => item.id === id)!)),
   getByNumber: (containerNumber: string) =>
-    simulateNetwork(containers.find((item) => item.containerNumber === containerNumber)!),
+    simulateNetwork(
+      attachContainerRelations(
+        containers.find((item) => item.containerNumber === containerNumber)!
+      )
+    ),
   create: (data: Partial<Container>) => {
-    const item: Container = {
+    if (data.vesselCallId) {
+      const err = validateContainerVesselAssignment(undefined, data.vesselCallId);
+      if (err) return Promise.reject(new Error(err));
+    }
+    const item: Container = attachContainerRelations({
       id: nextId++,
       containerNumber: data.containerNumber || `DEMO${nextId}`,
       containerType: data.containerType || ('TWENTY_GP' as Container['containerType']),
@@ -697,107 +692,47 @@ export const demoContainersApi = {
       createdAt: now,
       updatedAt: now,
       ...data,
-    } as Container;
+    } as Container);
     containers.push(item);
     return simulateNetwork(item);
   },
   update: (id: number, data: Partial<Container>) => {
     const index = containers.findIndex((item) => item.id === id);
-    containers[index] = { ...containers[index], ...data, updatedAt: now };
-    return simulateNetwork(containers[index]);
+    if (index < 0) {
+      return Promise.reject(new Error('Партия не найдена'));
+    }
+    if (data.vesselCallId) {
+      const err = validateContainerVesselAssignment(
+        containers[index].vesselCallId,
+        data.vesselCallId
+      );
+      if (err) return Promise.reject(new Error(err));
+    }
+    const updated = attachContainerRelations({
+      ...containers[index],
+      ...data,
+      updatedAt: now,
+    });
+    containers[index] = updated;
+    return simulateNetwork(updated);
   },
   move: (id: number, data: { warehouseId?: number; location?: string; status?: string }) => {
     const index = containers.findIndex((item) => item.id === id);
-    containers[index] = {
+    if (index < 0) {
+      return Promise.reject(new Error('Партия не найдена'));
+    }
+    containers[index] = attachContainerRelations({
       ...containers[index],
-      ...data,
+      warehouseId: data.warehouseId ?? containers[index].warehouseId,
+      location: data.location ?? containers[index].location,
       status: (data.status || containers[index].status) as Container['status'],
       updatedAt: now,
-    };
+    });
     return simulateNetwork(containers[index]);
   },
   delete: (id: number) => {
     const index = containers.findIndex((item) => item.id === id);
     containers.splice(index, 1);
-    return simulateNetwork(undefined);
-  },
-};
-
-export const demoTrucksApi = {
-  getAll: () => simulateNetwork([...trucks]),
-  getById: (id: number) => simulateNetwork(trucks.find((item) => item.id === id)!),
-  create: (data: Partial<Truck>) => {
-    const item: Truck = {
-      id: nextId++,
-      licensePlate: data.licensePlate || `X${nextId}XX77`,
-      truckType: data.truckType || ('TRUCK' as Truck['truckType']),
-      carrier: data.carrier || 'Demo Carrier',
-      createdAt: now,
-      updatedAt: now,
-      ...data,
-    } as Truck;
-    trucks.push(item);
-    return simulateNetwork(item);
-  },
-  update: (id: number, data: Partial<Truck>) => {
-    const index = trucks.findIndex((item) => item.id === id);
-    trucks[index] = { ...trucks[index], ...data, updatedAt: now };
-    return simulateNetwork(trucks[index]);
-  },
-  delete: (id: number) => {
-    const index = trucks.findIndex((item) => item.id === id);
-    trucks.splice(index, 1);
-    return simulateNetwork(undefined);
-  },
-};
-
-export const demoTruckVisitsApi = {
-  getAll: () => simulateNetwork(truckVisits.map((visit) => ({ ...visit, truck: trucks.find((t) => t.id === visit.truckId) || visit.truck }))),
-  getById: (id: number) => simulateNetwork(truckVisits.find((item) => item.id === id)!),
-  create: (data: Partial<TruckVisit>) => {
-    const truck = trucks.find((item) => item.id === data.truckId);
-    const item: TruckVisit = {
-      id: nextId++,
-      truckId: data.truckId!,
-      truck: truck || trucks[0],
-      timeSlot: data.timeSlot || now,
-      purpose: data.purpose || 'Операция',
-      status: (data.status || 'SCHEDULED') as TruckVisit['status'],
-      createdAt: now,
-      updatedAt: now,
-      ...data,
-    } as TruckVisit;
-    truckVisits.push(item);
-    return simulateNetwork(item);
-  },
-  update: (id: number, data: Partial<TruckVisit>) => {
-    const index = truckVisits.findIndex((item) => item.id === id);
-    truckVisits[index] = { ...truckVisits[index], ...data, updatedAt: now };
-    return simulateNetwork(truckVisits[index]);
-  },
-  checkIn: (id: number) => {
-    const index = truckVisits.findIndex((item) => item.id === id);
-    truckVisits[index] = {
-      ...truckVisits[index],
-      status: 'ARRIVED' as TruckVisit['status'],
-      timeIn: now,
-      updatedAt: now,
-    };
-    return simulateNetwork(truckVisits[index]);
-  },
-  checkOut: (id: number) => {
-    const index = truckVisits.findIndex((item) => item.id === id);
-    truckVisits[index] = {
-      ...truckVisits[index],
-      status: 'COMPLETED' as TruckVisit['status'],
-      timeOut: now,
-      updatedAt: now,
-    };
-    return simulateNetwork(truckVisits[index]);
-  },
-  delete: (id: number) => {
-    const index = truckVisits.findIndex((item) => item.id === id);
-    truckVisits.splice(index, 1);
     return simulateNetwork(undefined);
   },
 };
@@ -832,31 +767,222 @@ export const demoWarehousesApi = {
   },
 };
 
+export const demoTrainConsistsApi = {
+  getAll: (params?: { status?: string; direction?: string }) => {
+    let list = trainConsists;
+    if (params?.status && params.status !== 'ALL') {
+      list = list.filter((c) => c.status === params.status);
+    }
+    if (params?.direction && params.direction !== 'ALL') {
+      list = list.filter((c) => c.direction === params.direction);
+    }
+    return simulateNetwork(list.map(attachTrainConsistRelations));
+  },
+  getById: (id: number) =>
+    simulateNetwork(attachTrainConsistRelations(trainConsists.find((c) => c.id === id)!)),
+  create: (data: Partial<TrainConsist> & { wagonIds?: number[] }) => {
+    const item = attachTrainConsistRelations({
+      id: nextId++,
+      trainNumber: data.trainNumber || `T${nextId}`,
+      origin: data.origin,
+      track: data.track,
+      direction: 'INBOUND',
+      arrivalAt: data.arrivalAt || now,
+      status: 'EN_ROUTE',
+      createdAt: now,
+      updatedAt: now,
+    } as TrainConsist);
+    trainConsists.push(item);
+    if (data.wagonIds?.length) {
+      data.wagonIds.forEach((wid) => {
+        const wi = wagons.findIndex((w) => w.id === wid);
+        if (wi >= 0) {
+          wagons[wi] = {
+            ...wagons[wi],
+            trainConsistId: item.id,
+            trainNumber: item.trainNumber,
+            status: 'EN_ROUTE' as Wagon['status'],
+          };
+        }
+      });
+    }
+    return simulateNetwork(attachTrainConsistRelations(item));
+  },
+  createOutbound: (data: {
+    trainNumber: string;
+    destination: string;
+    track?: string;
+    wagonIds: number[];
+  }) => {
+    const invalid = data.wagonIds.filter((wid) => {
+      const w = wagons.find((x) => x.id === wid);
+      return !w || w.status !== 'IN_PARK' || w.trainConsistId != null;
+    });
+    if (!data.wagonIds.length) {
+      return Promise.reject(new Error('Выберите хотя бы один вагон из парка'));
+    }
+    if (invalid.length) {
+      return Promise.reject(new Error('Вагоны должны быть в парке без состава'));
+    }
+    const item = attachTrainConsistRelations({
+      id: nextId++,
+      trainNumber: data.trainNumber.trim(),
+      destination: data.destination.trim(),
+      track: data.track?.trim(),
+      direction: 'OUTBOUND',
+      arrivalAt: now,
+      formedAt: now,
+      status: 'FORMING',
+      createdAt: now,
+      updatedAt: now,
+    } as TrainConsist);
+    trainConsists.push(item);
+    data.wagonIds.forEach((wid) => {
+      const wi = wagons.findIndex((w) => w.id === wid);
+      if (wi >= 0) {
+        wagons[wi] = {
+          ...wagons[wi],
+          trainConsistId: item.id,
+          trainNumber: item.trainNumber,
+          status: 'FORMING' as Wagon['status'],
+        };
+      }
+    });
+    return simulateNetwork(attachTrainConsistRelations(item));
+  },
+  updateStatus: (id: number, status: string) => {
+    const index = trainConsists.findIndex((c) => c.id === id);
+    if (index < 0) return Promise.reject(new Error('Состав не найден'));
+
+    const consist = trainConsists[index];
+
+    if (consist.direction === 'OUTBOUND' && status === 'DEPARTED') {
+      wagons.splice(0, wagons.length, ...wagons.filter((w) => w.trainConsistId !== id));
+      trainConsists.splice(index, 1);
+      return simulateNetwork({ id, status: 'DEPARTED', purged: true });
+    }
+
+    trainConsists[index] = { ...consist, status: status as TrainConsist['status'], updatedAt: now };
+    wagons.forEach((w, wi) => {
+      if (w.trainConsistId !== id) return;
+      wagons[wi] = { ...w, status: status as Wagon['status'] };
+    });
+
+    return simulateNetwork(attachTrainConsistRelations(trainConsists[index]));
+  },
+  disband: (id: number) => {
+    const index = trainConsists.findIndex((c) => c.id === id);
+    if (index < 0) return Promise.reject(new Error('Состав не найден'));
+    if (trainConsists[index].direction !== 'INBOUND') {
+      return Promise.reject(new Error('Расформировать можно только входящий состав'));
+    }
+    if (trainConsists[index].status !== 'UNLOADING') {
+      return Promise.reject(new Error('Расформирование доступно после завершения разгрузки'));
+    }
+    wagons.forEach((w, wi) => {
+      if (w.trainConsistId !== id) return;
+      wagons[wi] = {
+        ...w,
+        status: 'IN_PARK' as Wagon['status'],
+        trainConsistId: undefined,
+        containerId: undefined,
+        cargo: undefined,
+        cargoWeight: undefined,
+      };
+    });
+    trainConsists.splice(index, 1);
+    return simulateNetwork({ id, disbanded: true });
+  },
+  delete: (id: number) => {
+    const consist = trainConsists.find((c) => c.id === id);
+    if (consist?.direction === 'OUTBOUND') {
+      wagons.splice(0, wagons.length, ...wagons.filter((w) => w.trainConsistId !== id));
+    } else {
+      wagons.forEach((w, wi) => {
+        if (w.trainConsistId !== id) return;
+        wagons[wi] = {
+          ...w,
+          status: 'IN_PARK' as Wagon['status'],
+          trainConsistId: undefined,
+          containerId: undefined,
+          cargo: undefined,
+          cargoWeight: undefined,
+        };
+      });
+    }
+    const index = trainConsists.findIndex((c) => c.id === id);
+    trainConsists.splice(index, 1);
+    return simulateNetwork(undefined);
+  },
+};
+
 export const demoWagonsApi = {
-  getAll: () => simulateNetwork([...wagons]),
-  getById: (id: number) => simulateNetwork(wagons.find((item) => item.id === id)!),
+  getAll: (params?: {
+    status?: string;
+    warehouseId?: number;
+    withoutConsist?: boolean;
+    inParkWithoutConsist?: boolean;
+  }) => {
+    let list = wagons;
+    if (params?.inParkWithoutConsist) {
+      list = list.filter((w) => w.status === 'IN_PARK' && w.trainConsistId == null);
+    } else {
+      if (params?.status && params.status !== 'ALL') {
+        list = list.filter((w) => w.status === params.status);
+      }
+      if (params?.withoutConsist) {
+        list = list.filter((w) => w.trainConsistId == null);
+      }
+    }
+    if (params?.warehouseId) {
+      list = list.filter((w) => w.warehouseId === params.warehouseId);
+    }
+    return simulateNetwork(list.map(attachWagonRelations));
+  },
+  getById: (id: number) =>
+    simulateNetwork(attachWagonRelations(wagons.find((item) => item.id === id)!)),
   create: (data: Partial<Wagon>) => {
-    const item: Wagon = {
+    if (data.containerId) {
+      const err = validateWagonContainerAssignment(wagons, data.containerId);
+      if (err) return Promise.reject(new Error(err));
+    }
+    const item: Wagon = attachWagonRelations({
       id: nextId++,
       number: data.number || `${nextId}${nextId}${nextId}${nextId}${nextId}${nextId}${nextId}${nextId}`,
       wagonType: data.wagonType || ('PLATFORM' as Wagon['wagonType']),
       arrivalAt: data.arrivalAt || now,
-      status: (data.status || 'EXPECTED') as Wagon['status'],
+      status: (data.status || 'EN_ROUTE') as Wagon['status'],
       createdAt: now,
       updatedAt: now,
       ...data,
-    } as Wagon;
+    } as Wagon);
     wagons.push(item);
     return simulateNetwork(item);
   },
   update: (id: number, data: Partial<Wagon>) => {
     const index = wagons.findIndex((item) => item.id === id);
-    wagons[index] = { ...wagons[index], ...data, updatedAt: now };
-    return simulateNetwork(wagons[index]);
+    if (index < 0) {
+      return Promise.reject(new Error('Вагон не найден'));
+    }
+    if (data.containerId) {
+      const err = validateWagonContainerAssignment(wagons, data.containerId, id);
+      if (err) return Promise.reject(new Error(err));
+    }
+    const updated = attachWagonRelations({
+      ...wagons[index],
+      ...data,
+      updatedAt: now,
+    });
+    wagons[index] = updated;
+    return simulateNetwork(updated);
   },
   updateStatus: (id: number, status: string) => {
     const index = wagons.findIndex((item) => item.id === id);
-    wagons[index] = { ...wagons[index], status: status as Wagon['status'], updatedAt: now };
+    const normalized = status === 'EXPECTED' ? 'EN_ROUTE' : status;
+    if (normalized === 'DEPARTED') {
+      return Promise.reject(new Error('Статус «Убыл» задаётся на уровне состава'));
+    }
+    wagons[index] = { ...wagons[index], status: normalized as Wagon['status'], updatedAt: now };
     return simulateNetwork(wagons[index]);
   },
   delete: (id: number) => {
@@ -997,9 +1123,69 @@ export const demoLogisticsOrdersApi = {
   delete: (id: number) => {
     const index = logisticsOrders.findIndex((o) => o.id === id);
     logisticsOrders.splice(index, 1);
+    orderDocuments.splice(
+      0,
+      orderDocuments.length,
+      ...orderDocuments.filter((d) => d.orderId !== id)
+    );
     containers.forEach((c, i) => {
       if (c.logisticsOrderId === id) containers[i] = { ...c, logisticsOrderId: undefined };
     });
+    return simulateNetwork(undefined);
+  },
+};
+
+function triggerBlobDownload(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+export const demoLogisticsOrderDocumentsApi = {
+  getAll: (orderId: number) =>
+    simulateNetwork(
+      orderDocuments
+        .filter((d) => d.orderId === orderId)
+        .sort((a, b) => b.uploadedAt.localeCompare(a.uploadedAt))
+    ),
+  upload: async (
+    orderId: number,
+    file: File,
+    meta?: { documentType?: string; description?: string }
+  ) => {
+    const id = nextId++;
+    const item: LogisticsOrderDocument = {
+      id,
+      orderId,
+      fileName: file.name,
+      storedName: `demo-${id}-${file.name}`,
+      mimeType: file.type || undefined,
+      fileSize: file.size,
+      documentType: (meta?.documentType as LogisticsOrderDocument['documentType']) ?? 'OTHER',
+      description: meta?.description,
+      uploadedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    };
+    orderDocuments.push(item);
+    orderDocumentBlobs.set(id, file);
+    return simulateNetwork(item);
+  },
+  download: async (orderId: number, docId: number, fileName: string) => {
+    const doc = orderDocuments.find((d) => d.id === docId && d.orderId === orderId);
+    if (!doc) return Promise.reject(new Error('Документ не найден'));
+    const blob = orderDocumentBlobs.get(docId) ?? new Blob(['Демо-содержимое'], { type: 'text/plain' });
+    triggerBlobDownload(blob, fileName);
+    return simulateNetwork(undefined);
+  },
+  delete: (orderId: number, docId: number) => {
+    const index = orderDocuments.findIndex((d) => d.id === docId && d.orderId === orderId);
+    if (index < 0) return Promise.reject(new Error('Документ не найден'));
+    orderDocuments.splice(index, 1);
+    orderDocumentBlobs.delete(docId);
     return simulateNetwork(undefined);
   },
 };
@@ -1077,13 +1263,12 @@ export const demoLogisticsRoutesApi = {
     const defaultStages: Partial<RouteStage>[] = data.stages?.length
       ? data.stages
       : [
-          { sequence: 1, stageType: 'SUPPLIER', locationCode: 'SUP', locationName: 'Поставщик', transportMode: 'ROAD', status: 'COMPLETED' },
-          { sequence: 2, stageType: 'RAIL_STATION', locationCode: 'RZD', locationName: 'Ж/д фронт', transportMode: 'RAIL', status: 'COMPLETED' },
-          { sequence: 3, stageType: 'ROAD_GATE', locationCode: 'GATE', locationName: 'Автовесовая', transportMode: 'ROAD', status: 'COMPLETED' },
-          { sequence: 4, stageType: 'WAREHOUSE', locationCode: 'WH', locationName: 'Склад терминала', transportMode: 'WAREHOUSE', status: 'CURRENT' },
-          { sequence: 5, stageType: 'BERTH', locationCode: 'BERTH', locationName: 'Причал погрузки', transportMode: 'SEA', status: 'PENDING' },
-          { sequence: 6, stageType: 'SHIP', locationCode: 'SHIP', locationName: 'Судно', transportMode: 'SEA', status: 'PENDING' },
-          { sequence: 7, stageType: 'PORT', locationCode: data.destination || 'DEST', locationName: `Порт ${data.destination || 'назначения'}`, transportMode: 'SEA', status: 'PENDING' },
+          { sequence: 1, stageType: 'SUPPLIER', locationCode: 'SUP', locationName: 'Поставщик (ж/д отгрузка)', transportMode: 'RAIL', status: 'COMPLETED' },
+          { sequence: 2, stageType: 'RAIL_STATION', locationCode: 'RZD', locationName: 'Вагоны', transportMode: 'RAIL', status: 'COMPLETED' },
+          { sequence: 3, stageType: 'WAREHOUSE', locationCode: 'WH', locationName: 'Склад терминала', transportMode: 'WAREHOUSE', status: 'CURRENT' },
+          { sequence: 4, stageType: 'BERTH', locationCode: 'BERTH', locationName: 'Причал погрузки', transportMode: 'SEA', status: 'PENDING' },
+          { sequence: 5, stageType: 'SHIP', locationCode: 'SHIP', locationName: 'Судно', transportMode: 'SEA', status: 'PENDING' },
+          { sequence: 6, stageType: 'PORT', locationCode: data.destination || 'DEST', locationName: formatPortCode(data.destination) || 'Порт назначения', transportMode: 'SEA', status: 'PENDING' },
         ];
     defaultStages.forEach((s, i) => {
       routeStages.push({
@@ -1105,8 +1290,8 @@ export const demoLogisticsRoutesApi = {
       routeNumber: data.routeNumber || `RT-DEMO-${routeId}`,
       name: data.name,
       orderId: data.orderId,
-      origin: data.origin || 'SUPPLIER',
-      destination: data.destination || 'PORT-DEST',
+      origin: data.origin || 'Поставщик',
+      destination: data.destination ? formatPortCode(data.destination) : 'Порт назначения',
       routeKind: 'EXPORT',
       status: (data.status || 'PLANNED') as LogisticsRoute['status'],
       createdAt: now,
@@ -1127,7 +1312,7 @@ export const demoLogisticsRoutesApi = {
     const normalized = batchNumber.toUpperCase().trim();
     const container = containers.find((c) => c.containerNumber === normalized);
     if (!container) {
-      return Promise.reject(new Error('Cargo batch not found'));
+      return Promise.reject(new Error('Партия груза не найдена'));
     }
     const trackings = cargoTrackings
       .filter((t) => t.containerId === container.id)
@@ -1151,10 +1336,10 @@ export const demoLogisticsRoutesApi = {
     const route = logisticsRoutes.find((r) => r.id === routeId);
     const container = containers.find((c) => c.id === containerId);
     if (!route || !container) {
-      return Promise.reject(new Error('Route or container not found'));
+      return Promise.reject(new Error('Маршрут или партия не найдены'));
     }
     if (cargoTrackings.some((t) => t.containerId === containerId && t.routeId === routeId)) {
-      return Promise.reject(new Error('Already tracking on this route'));
+      return Promise.reject(new Error('Отслеживание по этому маршруту уже запущено'));
     }
     const stages = getRouteStages(routeId);
     const firstStage = stages[0];
@@ -1186,6 +1371,7 @@ export const demoLogisticsRoutesApi = {
         description: `Старт на этапе: ${firstStage.locationName}`,
         createdAt: now,
       });
+      syncDemoCargoStatus(containerId, firstStage.stageType);
     }
     if (route.status === 'PLANNED') {
       const ri = logisticsRoutes.findIndex((r) => r.id === routeId);
@@ -1288,7 +1474,7 @@ export const demoAuthApi = {
 
     const user = demoUsers.find((item) => item.username === username);
     if (!user) {
-      throw new Error('Invalid username or password');
+      throw new Error('Неверный логин или пароль');
     }
 
     return {
@@ -1299,14 +1485,14 @@ export const demoAuthApi = {
   getMe: async (): Promise<User> => {
     const stored = localStorage.getItem('tos_user');
     if (!stored) {
-      throw new Error('Not authenticated');
+      throw new Error('Требуется авторизация');
     }
     return simulateNetwork(JSON.parse(stored) as User);
   },
   getUsers: async (): Promise<User[]> => simulateNetwork([...demoUsers]),
   createUser: async (data: CreateUserRequest): Promise<User> => {
     if (demoUsers.some((item) => item.username === data.username)) {
-      throw new Error('Username already exists');
+      throw new Error('Пользователь с таким логином уже существует');
     }
 
     const user: User = {
@@ -1323,7 +1509,7 @@ export const demoAuthApi = {
   updateUser: async (id: number, data: UpdateUserRequest): Promise<User> => {
     const index = demoUsers.findIndex((item) => item.id === id);
     if (index === -1) {
-      throw new Error('User not found');
+      throw new Error('Пользователь не найден');
     }
     demoUsers[index] = {
       ...demoUsers[index],
@@ -1335,7 +1521,7 @@ export const demoAuthApi = {
   deleteUser: async (id: number): Promise<void> => {
     const index = demoUsers.findIndex((item) => item.id === id);
     if (index === -1) {
-      throw new Error('User not found');
+      throw new Error('Пользователь не найден');
     }
     demoUsers.splice(index, 1);
     await simulateNetwork(null);

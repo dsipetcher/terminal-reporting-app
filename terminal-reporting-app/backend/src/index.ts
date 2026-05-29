@@ -8,16 +8,16 @@ import vesselsRouter from './routes/vessels';
 import vesselCallsRouter from './routes/vesselCalls';
 import berthsRouter from './routes/berths';
 import containersRouter from './routes/containers';
-import trucksRouter from './routes/trucks';
-import truckVisitsRouter from './routes/truckVisits';
 import warehousesRouter from './routes/warehouses';
 import wagonsRouter from './routes/wagons';
 import logisticsOrdersRouter from './routes/logisticsOrders';
+import logisticsOrderDocumentsRouter from './routes/logisticsOrderDocuments';
 import counterpartiesRouter from './routes/counterparties';
 import materialFlowsRouter from './routes/materialFlows';
 import infoFlowsRouter from './routes/infoFlows';
 import directoriesRouter from './routes/directories';
 import logisticsRoutesRouter from './routes/logisticsRoutes';
+import trainConsistsRouter from './routes/trainConsists';
 
 const app = express();
 
@@ -37,7 +37,6 @@ app.get('/api/dashboard/stats', authenticateToken, async (_req, res) => {
       activeVesselCalls,
       containersCount,
       wagonsCount,
-      trucksCount,
       warehousesCount,
       ordersTotal,
       ordersPlanning,
@@ -54,13 +53,12 @@ app.get('/api/dashboard/stats', authenticateToken, async (_req, res) => {
       prisma.vesselCall.count({
         where: {
           status: {
-            in: ['EXPECTED', 'ARRIVED', 'BERTHED', 'IN_OPERATION'],
+            in: ['EN_ROUTE', 'ARRIVED', 'UNLOADING', 'EXPECTED', 'BERTHED', 'IN_OPERATION'],
           },
         },
       }),
       prisma.container.count(),
       prisma.wagon.count(),
-      prisma.truck.count(),
       prisma.warehouse.count(),
       prisma.logisticsOrder.count(),
       prisma.logisticsOrder.count({ where: { managementLevel: 'PLANNING' } }),
@@ -91,7 +89,6 @@ app.get('/api/dashboard/stats', authenticateToken, async (_req, res) => {
       vesselCallsActive: activeVesselCalls,
       containers: containersCount,
       wagons: wagonsCount,
-      trucks: trucksCount,
       warehouses: warehousesCount,
       ordersTotal,
       ordersPlanning,
@@ -114,11 +111,15 @@ app.use('/api/vessels', authenticateToken, vesselsRouter);
 app.use('/api/vessel-calls', authenticateToken, vesselCallsRouter);
 app.use('/api/berths', authenticateToken, berthsRouter);
 app.use('/api/containers', authenticateToken, containersRouter);
-app.use('/api/trucks', authenticateToken, trucksRouter);
-app.use('/api/truck-visits', authenticateToken, truckVisitsRouter);
 app.use('/api/warehouses', authenticateToken, warehousesRouter);
 app.use('/api/wagons', authenticateToken, wagonsRouter);
+app.use('/api/train-consists', authenticateToken, trainConsistsRouter);
 app.use('/api/logistics-orders', authenticateToken, logisticsOrdersRouter);
+app.use(
+  '/api/logistics-orders/:orderId/documents',
+  authenticateToken,
+  logisticsOrderDocumentsRouter
+);
 app.use('/api/counterparties', authenticateToken, counterpartiesRouter);
 app.use('/api/material-flows', authenticateToken, materialFlowsRouter);
 app.use('/api/info-flows', authenticateToken, infoFlowsRouter);
