@@ -1,9 +1,8 @@
 import {
   LayoutDashboard,
-  MapPinned,
   Package,
-  ArrowLeftRight,
   ClipboardList,
+  ArrowLeftRight,
   Train,
   Truck,
   Warehouse,
@@ -32,8 +31,15 @@ export interface NavGroup {
 
 export const HOME_LINK: NavItem = {
   to: '/',
-  label: 'Центр управления',
+  label: 'Обзор',
   icon: LayoutDashboard,
+};
+
+/** Primary entry — cargo-centric UX */
+export const CARGO_LINK: NavItem = {
+  to: '/cargo',
+  label: 'Партии груза',
+  icon: Package,
 };
 
 export const REPORTS_LINK: NavItem = {
@@ -42,32 +48,8 @@ export const REPORTS_LINK: NavItem = {
   icon: FileBarChart,
 };
 
+/** Secondary: reference data maintained outside cargo cards */
 export const NAV_GROUPS: NavGroup[] = [
-  {
-    id: 'cargo',
-    label: 'Учёт грузов',
-    icon: Package,
-    defaultOpen: true,
-    items: [
-      { to: '/cargo-tracking', label: 'Отслеживание', icon: MapPinned },
-      { to: '/cargo-lots', label: 'Партии груза', icon: Package },
-      { to: '/logistics-orders', label: 'Заказы', icon: ClipboardList },
-      { to: '/flows', label: 'Потоки', icon: ArrowLeftRight },
-    ],
-  },
-  {
-    id: 'terminal',
-    label: 'Терминал и транспорт',
-    icon: Warehouse,
-    items: [
-      { to: '/warehouses', label: 'Склады', icon: Warehouse },
-      { to: '/wagons', label: 'Ж/д фронт', icon: Train },
-      { to: '/trucks', label: 'Автотранспорт', icon: Truck },
-      { to: '/vessels', label: 'Суда', icon: Ship },
-      { to: '/vessel-calls', label: 'Судозаходы', icon: Ship },
-      { to: '/berths', label: 'Причалы', icon: Anchor },
-    ],
-  },
   {
     id: 'refs',
     label: 'Справочники',
@@ -75,6 +57,22 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/directories', label: 'НСИ (порты, грузы)', icon: BookOpen },
       { to: '/counterparties', label: 'Контрагенты', icon: Building2 },
+    ],
+  },
+  {
+    id: 'terminal',
+    label: 'Данные терминала',
+    icon: Warehouse,
+    items: [
+      { to: '/logistics-orders', label: 'Логистические заказы', icon: ClipboardList },
+      { to: '/flows', label: 'Журнал потоков', icon: ArrowLeftRight },
+      { to: '/warehouses', label: 'Склады', icon: Warehouse },
+      { to: '/wagons', label: 'Ж/д фронт', icon: Train },
+      { to: '/trucks', label: 'Автотранспорт', icon: Truck },
+      { to: '/vessels', label: 'Суда', icon: Ship },
+      { to: '/vessel-calls', label: 'Судозаходы', icon: Ship },
+      { to: '/berths', label: 'Причалы', icon: Anchor },
+      { to: '/cargo-lots', label: 'Регистрация партий', icon: Package },
     ],
   },
 ];
@@ -86,7 +84,8 @@ export const ADMIN_LINK: NavItem = {
 };
 
 export function findGroupForPath(path: string): string | null {
-  if (path === '/' || path === '/reports') return null;
+  if (path === '/' || path === '/cargo' || path === '/reports') return null;
+  if (path.startsWith('/cargo?')) return null;
   for (const group of NAV_GROUPS) {
     if (group.items.some((item) => item.to === path || path.startsWith(item.to + '/'))) {
       return group.id;

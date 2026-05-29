@@ -21,7 +21,7 @@ import LoginPage from './pages/LoginPage';
 import LogisticsOrdersPage from './pages/LogisticsOrdersPage';
 import CounterpartiesPage from './pages/CounterpartiesPage';
 import FlowsPage from './pages/FlowsPage';
-import CargoTrackingPage from './pages/CargoTrackingPage';
+import CargoHubPage from './pages/CargoHubPage';
 import DirectoriesPage from './pages/DirectoriesPage';
 import { USER_ROLE_LABELS } from './utils';
 
@@ -79,7 +79,7 @@ function AppLayout() {
             <div className="flex-1 md:flex-none">
               <h1 className="text-lg font-semibold text-primary">Информационно-логистическая система</h1>
               <p className="text-xs text-muted hidden sm:block">
-                Централизованное управление · отчётность · учёт партий груза
+                Объект учёта — партия груза · вся информация в карточке партии
               </p>
             </div>
 
@@ -130,7 +130,8 @@ function AppLayout() {
             <Route path="/wagons" element={<Guard><WagonsPage /></Guard>} />
             <Route path="/warehouses" element={<Guard><WarehousesPage /></Guard>} />
             <Route path="/logistics-orders" element={<Guard><LogisticsOrdersPage /></Guard>} />
-            <Route path="/cargo-tracking" element={<Guard><CargoTrackingPage /></Guard>} />
+            <Route path="/cargo" element={<Guard><CargoHubPage /></Guard>} />
+            <Route path="/cargo-tracking" element={<Navigate to="/cargo" replace />} />
             <Route path="/counterparties" element={<Guard><CounterpartiesPage /></Guard>} />
             <Route path="/directories" element={<Guard><DirectoriesPage /></Guard>} />
             <Route path="/flows" element={<Guard><FlowsPage /></Guard>} />

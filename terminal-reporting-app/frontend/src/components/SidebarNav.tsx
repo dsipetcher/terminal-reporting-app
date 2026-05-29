@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   HOME_LINK,
+  CARGO_LINK,
   REPORTS_LINK,
   NAV_GROUPS,
   ADMIN_LINK,
@@ -39,11 +40,20 @@ export function SidebarNav({ isAdmin, onNavigate }: SidebarNavProps) {
   };
 
   const linkClass = (to: string) => {
-    const active = currentPath === to || (to !== '/' && currentPath.startsWith(to));
+    const isCargoHub = to === '/cargo' && currentPath === '/cargo';
+    const active =
+      currentPath === to ||
+      isCargoHub ||
+      (to !== '/' && to !== '/cargo' && currentPath.startsWith(to));
+    const isPrimary = to === '/cargo';
     return `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
       active
-        ? 'bg-blue-600/20 text-white font-medium'
-        : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+        ? isPrimary
+          ? 'bg-blue-600 text-white font-semibold shadow-md'
+          : 'bg-blue-600/20 text-white font-medium'
+        : isPrimary
+          ? 'text-white bg-slate-800 hover:bg-blue-600/80 font-medium'
+          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
     }`;
   };
 
@@ -57,6 +67,12 @@ export function SidebarNav({ isAdmin, onNavigate }: SidebarNavProps) {
   return (
     <nav className="flex-1 overflow-y-auto p-3 min-h-0 space-y-1">
       {renderLink(HOME_LINK.to, HOME_LINK.label, HOME_LINK.icon)}
+
+      <div className="pt-1 pb-2">
+        {renderLink(CARGO_LINK.to, CARGO_LINK.label, CARGO_LINK.icon)}
+        <p className="px-3 mt-1 text-[10px] text-slate-500">Объект учёта ИЛС</p>
+      </div>
+
       {renderLink(REPORTS_LINK.to, REPORTS_LINK.label, REPORTS_LINK.icon)}
 
       {NAV_GROUPS.map((group) => {

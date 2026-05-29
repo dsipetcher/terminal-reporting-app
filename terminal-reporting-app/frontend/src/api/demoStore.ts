@@ -1132,7 +1132,19 @@ export const demoLogisticsRoutesApi = {
     const trackings = cargoTrackings
       .filter((t) => t.containerId === container.id)
       .map(attachTrackingRelations);
-    return simulateNetwork({ container, trackings });
+    const enriched: Container = {
+      ...container,
+      warehouse: container.warehouseId
+        ? warehouses.find((w) => w.id === container.warehouseId)
+        : undefined,
+      vesselCall: container.vesselCallId
+        ? attachVesselCallRelations(vesselCalls.find((vc) => vc.id === container.vesselCallId)!)
+        : undefined,
+      logisticsOrder: container.logisticsOrderId
+        ? attachOrderRelations(logisticsOrders.find((o) => o.id === container.logisticsOrderId)!)
+        : container.logisticsOrder,
+    };
+    return simulateNetwork({ container: enriched, trackings });
   },
   trackByContainer: (batchNumber: string) => demoLogisticsRoutesApi.trackByBatch(batchNumber),
   addTracking: (routeId: number, containerId: number, notes?: string) => {
