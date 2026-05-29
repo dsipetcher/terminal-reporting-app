@@ -52,8 +52,10 @@
 
 ЕСЛИ npm install ПАДАЕТ (EPERM, EISDIR, Prisma)
   1. Закройте run.bat / start.bat (или stop.bat)
-  2. Удалите папки backend/node_modules и frontend/node_modules
-  3. Снова запустите run.bat или prepare-portable.bat
+  2. Запустите repair.bat из корня репозитория
+  3. Затем run.bat
+
+  repair.bat удалит node_modules и поставит зависимости заново.
   Не копируйте node_modules с другого ПК — ставьте на месте через run.bat
 
 ОСТАНОВКА

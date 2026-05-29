@@ -60,9 +60,18 @@ echo [ERROR] Node.js unavailable. Run install-node.bat or prepare-portable.bat
 exit /b 1
 
 :ensure_deps
-if exist "%~dp0backend\node_modules\tsx" if exist "%~dp0frontend\node_modules\vite" goto :eof
+call :deps_ok
+if not errorlevel 1 goto :eof
 echo [2/5] Installing dependencies...
 call "%~dp0stop.bat" >nul 2>nul
+if exist "%~dp0backend\node_modules\terminal-reporting-app" (
+    echo Removing broken symlink backend/node_modules/terminal-reporting-app ...
+    rmdir /s /q "%~dp0backend\node_modules" 2>nul
+)
+if exist "%~dp0frontend\node_modules\terminal-reporting-app" (
+    echo Removing broken symlink frontend/node_modules/terminal-reporting-app ...
+    rmdir /s /q "%~dp0frontend\node_modules" 2>nul
+)
 set "PATH=%NODE_DIR%;%PATH%"
 if exist "%NODE_DIR%\npm.cmd" (
     call "%NODE_DIR%\npm.cmd" run install:all
@@ -70,17 +79,34 @@ if exist "%NODE_DIR%\npm.cmd" (
     call npm run install:all
 )
 if errorlevel 1 (
-    echo [WARN] npm install failed, retrying with clean backend node_modules...
+    echo [WARN] npm install failed, retrying with clean node_modules...
     rmdir /s /q "%~dp0backend\node_modules" 2>nul
     rmdir /s /q "%~dp0frontend\node_modules" 2>nul
+    rmdir /s /q "%~dp0node_modules" 2>nul
     if exist "%NODE_DIR%\npm.cmd" (
         call "%NODE_DIR%\npm.cmd" run install:all
     ) else (
         call npm run install:all
     )
 )
-if errorlevel 1 exit /b 1
+if errorlevel 1 (
+    echo [ERROR] npm install failed. Run repair.bat
+    exit /b 1
+)
+call :deps_ok
+if errorlevel 1 (
+    echo [ERROR] Dependencies still broken. Run repair.bat
+    exit /b 1
+)
 goto :eof
+
+:deps_ok
+if exist "%~dp0backend\node_modules\terminal-reporting-app" exit /b 1
+if not exist "%~dp0backend\node_modules\tsx\package.json" exit /b 1
+if not exist "%~dp0backend\node_modules\prisma\package.json" exit /b 1
+if not exist "%~dp0backend\node_modules\@prisma\client\package.json" exit /b 1
+if not exist "%~dp0frontend\node_modules\vite\package.json" exit /b 1
+exit /b 0
 
 :ensure_database
 if exist "%~dp0backend\prisma\dev.db" (
