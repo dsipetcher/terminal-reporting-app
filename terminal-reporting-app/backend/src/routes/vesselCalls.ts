@@ -101,9 +101,16 @@ router.put('/:id', async (req, res) => {
 // PATCH /api/vessel-calls/:id/status - Обновить статус судозахода
 router.patch('/:id/status', async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, berthId } = req.body;
     const updateData: any = { status };
-    
+
+    if (status === 'BERTHED') {
+      if (!berthId) {
+        return res.status(400).json({ error: 'Berth is required when status is BERTHED' });
+      }
+      updateData.berthId = Number(berthId);
+    }
+
     // Автоматически устанавливать фактическое время
     if (status === 'ARRIVED' && !req.body.ata) {
       updateData.ata = new Date();
@@ -111,7 +118,7 @@ router.patch('/:id/status', async (req, res) => {
     if (status === 'DEPARTED' && !req.body.atd) {
       updateData.atd = new Date();
     }
-    
+
     const vesselCall = await prisma.vesselCall.update({
       where: { id: Number(req.params.id) },
       data: updateData,
@@ -120,7 +127,7 @@ router.patch('/:id/status', async (req, res) => {
         berth: true,
       },
     });
-    
+
     res.json(vesselCall);
   } catch (error) {
     console.error('Error updating vessel call status:', error);

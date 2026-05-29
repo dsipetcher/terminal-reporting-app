@@ -20,6 +20,8 @@ export default function VesselCallsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [showForm, setShowForm] = useState(false);
+  const [assigningBerthForCallId, setAssigningBerthForCallId] = useState<number | null>(null);
+  const [selectedBerthId, setSelectedBerthId] = useState('');
   
   const [form, setForm] = useState({
     vesselId: '',
@@ -90,14 +92,29 @@ export default function VesselCallsPage() {
     }
   };
 
-  const updateStatus = async (id: number, newStatus: string) => {
+  const updateStatus = async (id: number, newStatus: string, berthId?: number) => {
     try {
-      await vesselCallsApi.updateStatus(id, newStatus);
+      await vesselCallsApi.updateStatus(id, newStatus, berthId);
+      setAssigningBerthForCallId(null);
+      setSelectedBerthId('');
       loadData();
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Ошибка при обновлении статуса');
     }
+  };
+
+  const startBerthAssignment = (call: VesselCall) => {
+    setAssigningBerthForCallId(call.id);
+    setSelectedBerthId(call.berthId ? String(call.berthId) : '');
+  };
+
+  const confirmBerthAssignment = async (callId: number) => {
+    if (!selectedBerthId) {
+      alert('Выберите причал');
+      return;
+    }
+    await updateStatus(callId, 'BERTHED', Number(selectedBerthId));
   };
 
   const filteredCalls = selectedStatus === 'ALL'
@@ -323,8 +340,8 @@ export default function VesselCallsPage() {
                   Прибыло
                 </button>
                 <button
-                  onClick={() => updateStatus(call.id, 'BERTHED')}
-                  disabled={call.status !== 'ARRIVED'}
+                  onClick={() => startBerthAssignment(call)}
+                  disabled={call.status !== 'ARRIVED' || assigningBerthForCallId === call.id}
                   className="px-3 py-1 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   У причала
@@ -344,6 +361,46 @@ export default function VesselCallsPage() {
                   Убыло
                 </button>
               </div>
+
+              {assigningBerthForCallId === call.id && (
+                <div className="mt-4 p-4 border border-default rounded-lg bg-gray-50 dark:bg-slate-900/50">
+                  <p className="text-sm font-medium text-primary mb-3">Назначение причала</p>
+                  <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                    <div className="flex-1 w-full">
+                      <label className="label-field">Причал *</label>
+                      <select
+                        value={selectedBerthId}
+                        onChange={(e) => setSelectedBerthId(e.target.value)}
+                        className="input-field"
+                      >
+                        <option value="">Выберите причал</option>
+                        {berths.filter((b) => b.isActive).map((berth) => (
+                          <option key={berth.id} value={berth.id}>
+                            №{berth.number} {berth.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => confirmBerthAssignment(call.id)}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 text-sm"
+                      >
+                        Подтвердить
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAssigningBerthForCallId(null);
+                          setSelectedBerthId('');
+                        }}
+                        className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 text-sm"
+                      >
+                        Отмена
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </Card>
           ))
         )}

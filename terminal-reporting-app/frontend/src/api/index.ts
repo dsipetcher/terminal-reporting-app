@@ -72,8 +72,8 @@ const realVesselCallsApi = {
   create: (data: Partial<VesselCall>) => api.post<VesselCall>('/vessel-calls', data).then(res => res.data),
   update: (id: number, data: Partial<VesselCall>) =>
     api.put<VesselCall>(`/vessel-calls/${id}`, data).then(res => res.data),
-  updateStatus: (id: number, status: string) =>
-    api.patch<VesselCall>(`/vessel-calls/${id}/status`, { status }).then(res => res.data),
+  updateStatus: (id: number, status: string, berthId?: number) =>
+    api.patch<VesselCall>(`/vessel-calls/${id}/status`, { status, berthId }).then(res => res.data),
   delete: (id: number) => api.delete(`/vessel-calls/${id}`),
 };
 

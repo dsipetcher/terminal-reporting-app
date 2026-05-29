@@ -285,12 +285,18 @@ export const demoVesselCallsApi = {
     vesselCalls[index] = attachVesselCallRelations({ ...vesselCalls[index], ...data, updatedAt: now });
     return simulateNetwork(vesselCalls[index]);
   },
-  updateStatus: (id: number, status: string) => {
+  updateStatus: (id: number, status: string, berthId?: number) => {
     const index = vesselCalls.findIndex((item) => item.id === id);
-    vesselCalls[index] = attachVesselCallRelations({
-      ...vesselCalls[index],
+    const update: Partial<VesselCall> = {
       status: status as VesselCall['status'],
       updatedAt: now,
+    };
+    if (status === 'BERTHED' && berthId) {
+      update.berthId = berthId;
+    }
+    vesselCalls[index] = attachVesselCallRelations({
+      ...vesselCalls[index],
+      ...update,
     });
     return simulateNetwork(vesselCalls[index]);
   },
