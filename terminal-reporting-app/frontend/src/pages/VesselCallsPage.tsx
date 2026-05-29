@@ -237,7 +237,7 @@ export default function VesselCallsPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-6 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 transition-colors"
+                className="px-6 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors"
               >
                 Отмена
               </button>
@@ -267,19 +267,19 @@ export default function VesselCallsPage() {
       <div className="space-y-4">
         {filteredCalls.length === 0 ? (
           <Card>
-            <p className="text-center text-slate-500 py-8">Нет судозаходов</p>
+            <p className="text-center text-subtle py-8">Нет судозаходов</p>
           </Card>
         ) : (
           filteredCalls.map((call) => (
             <Card key={call.id} className="hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-100">{call.vessel.name}</h3>
-                  <p className="text-sm text-slate-400">
+                  <h3 className="text-xl font-bold text-primary">{call.vessel.name}</h3>
+                  <p className="text-sm text-muted">
                     IMO: {call.vessel.imoNumber} | Тип: {VESSEL_TYPE_LABELS[call.vessel.vesselType]} | Рейс: {call.voyageNumber}
                   </p>
                   {call.agent && (
-                    <p className="text-sm text-slate-400">Агент: {call.agent}</p>
+                    <p className="text-sm text-muted">Агент: {call.agent}</p>
                   )}
                 </div>
                 <StatusBadge 
@@ -290,24 +290,24 @@ export default function VesselCallsPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <p className="text-xs text-slate-500">Планируемое прибытие</p>
+                  <p className="text-xs text-subtle">Планируемое прибытие</p>
                   <p className="font-medium">{formatDateTime(call.eta)}</p>
                 </div>
                 {call.ata && (
                   <div>
-                    <p className="text-xs text-slate-500">Фактическое прибытие</p>
+                    <p className="text-xs text-subtle">Фактическое прибытие</p>
                     <p className="font-medium">{formatDateTime(call.ata)}</p>
                   </div>
                 )}
                 {call.berth && (
                   <div>
-                    <p className="text-xs text-slate-500">Причал</p>
+                    <p className="text-xs text-subtle">Причал</p>
                     <p className="font-medium">№{call.berth.number} {call.berth.name}</p>
                   </div>
                 )}
                 {call._count && (
                   <div>
-                    <p className="text-xs text-slate-500">Контейнеров</p>
+                    <p className="text-xs text-subtle">Контейнеров</p>
                     <p className="font-medium">{call._count.containers}</p>
                   </div>
                 )}

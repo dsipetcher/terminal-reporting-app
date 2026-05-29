@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { HashRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import './App.css';
 import {
@@ -45,11 +45,11 @@ function AppLayout() {
         <div className="flex items-center justify-between p-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <Ship className="w-6 h-6 text-blue-400" />
-            <h2 className="text-xl font-bold text-slate-100">TOS</h2>
+            <h2 className="text-xl font-bold text-white">TOS</h2>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-slate-400 hover:text-slate-100"
+            className="md:hidden text-slate-400 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -156,17 +156,17 @@ function AppLayout() {
           <div className="flex items-center justify-between px-6 py-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg"
+              className="md:hidden p-2 text-muted hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg"
             >
               <Menu className="w-6 h-6" />
             </button>
 
             <div className="flex-1 md:flex-none">
-              <h1 className="text-xl font-semibold text-gray-900 dark:text-slate-100">Система управления терминалом</h1>
+              <h1 className="text-xl font-semibold text-primary">Система управления терминалом</h1>
             </div>
 
             <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-400 hidden sm:inline">
+              <span className="text-sm text-muted hidden sm:inline">
                 {new Date().toLocaleDateString('ru-RU', {
                   weekday: 'long',
                   year: 'numeric',
@@ -176,21 +176,21 @@ function AppLayout() {
               </span>
               <button
                 onClick={toggleTheme}
-                className="p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-lg"
+                className="p-2 text-muted hover:text-primary hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg"
                 title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
               >
                 {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <div className="flex items-center gap-3 border-l border-slate-700 pl-4">
+              <div className="flex items-center gap-3 border-l border-default pl-4">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-slate-100">{user?.username}</p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-sm font-medium text-primary">{user?.username}</p>
+                  <p className="text-xs text-subtle">
                     {user?.role === 'ADMIN' ? 'Администратор' : 'Пользователь'}
                   </p>
                 </div>
                 <button
                   onClick={logout}
-                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-950/50 rounded-lg"
+                  className="p-2 text-muted hover:text-red-400 hover:bg-red-950/50 rounded-lg"
                   title="Выйти"
                 >
                   <LogOut className="w-5 h-5" />

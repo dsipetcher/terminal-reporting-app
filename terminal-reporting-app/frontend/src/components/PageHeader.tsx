@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface PageHeaderProps {
   title: string;
@@ -10,8 +10,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, action 
   return (
     <div className="mb-6 flex justify-between items-start">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-slate-100">{title}</h1>
-        {subtitle && <p className="mt-2 text-gray-600 dark:text-slate-400">{subtitle}</p>}
+        <h1 className="text-3xl font-bold text-primary">{title}</h1>
+        {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
       </div>
       {action && <div>{action}</div>}
     </div>

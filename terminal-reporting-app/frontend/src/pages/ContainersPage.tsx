@@ -283,7 +283,7 @@ export default function ContainersPage() {
             </button>
             <button
               onClick={() => { setSearchNumber(''); loadData(); }}
-              className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"
+              className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600"
             >
               Сбросить
             </button>
@@ -311,15 +311,15 @@ export default function ContainersPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredContainers.length === 0 ? (
           <Card className="md:col-span-2 lg:col-span-3">
-            <p className="text-center text-slate-500 py-8">Нет контейнеров</p>
+            <p className="text-center text-subtle py-8">Нет контейнеров</p>
           </Card>
         ) : (
           filteredContainers.map((container) => (
             <Card key={container.id} className="hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-100">{container.containerNumber}</h3>
-                  <p className="text-sm text-slate-400">{CONTAINER_TYPE_LABELS[container.containerType]}</p>
+                  <h3 className="text-lg font-bold text-primary">{container.containerNumber}</h3>
+                  <p className="text-sm text-muted">{CONTAINER_TYPE_LABELS[container.containerType]}</p>
                 </div>
                 <StatusBadge 
                   status={container.status} 
@@ -330,27 +330,27 @@ export default function ContainersPage() {
               <div className="space-y-2">
                 {container.grossWeight && (
                   <p className="text-sm">
-                    <span className="text-slate-500">Вес:</span> {container.grossWeight} т
+                    <span className="text-subtle">Вес:</span> {container.grossWeight} т
                   </p>
                 )}
                 {container.cargoDescription && (
                   <p className="text-sm">
-                    <span className="text-slate-500">Груз:</span> {container.cargoDescription}
+                    <span className="text-subtle">Груз:</span> {container.cargoDescription}
                   </p>
                 )}
                 {container.warehouse && (
                   <p className="text-sm">
-                    <span className="text-slate-500">Склад:</span> {container.warehouse.number}
+                    <span className="text-subtle">Склад:</span> {container.warehouse.number}
                   </p>
                 )}
                 {container.location && (
                   <p className="text-sm">
-                    <span className="text-slate-500">Место:</span> {container.location}
+                    <span className="text-subtle">Место:</span> {container.location}
                   </p>
                 )}
                 {container.vesselCall && (
                   <p className="text-sm">
-                    <span className="text-slate-500">Судно:</span> {container.vesselCall.vessel.name}
+                    <span className="text-subtle">Судно:</span> {container.vesselCall.vessel.name}
                   </p>
                 )}
               </div>

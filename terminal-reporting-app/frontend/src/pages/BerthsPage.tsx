@@ -186,9 +186,9 @@ export default function BerthsPage() {
           <Card key={berth.id} className="hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-2xl font-bold text-slate-100">№{berth.number}</h3>
+                <h3 className="text-2xl font-bold text-primary">№{berth.number}</h3>
                 {berth.name && (
-                  <p className="text-sm text-slate-400">{berth.name}</p>
+                  <p className="text-sm text-muted">{berth.name}</p>
                 )}
               </div>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -200,26 +200,26 @@ export default function BerthsPage() {
 
             <div className="space-y-2">
               <p className="text-sm">
-                <span className="text-slate-500">Тип:</span> {BERTH_TYPE_LABELS[berth.berthType]}
+                <span className="text-subtle">Тип:</span> {BERTH_TYPE_LABELS[berth.berthType]}
               </p>
               <p className="text-sm">
-                <span className="text-slate-500">Длина:</span> {berth.length} м
+                <span className="text-subtle">Длина:</span> {berth.length} м
               </p>
               <p className="text-sm">
-                <span className="text-slate-500">Глубина:</span> {berth.depth} м
+                <span className="text-subtle">Глубина:</span> {berth.depth} м
               </p>
               {berth.maxDeadweight && (
                 <p className="text-sm">
-                  <span className="text-slate-500">Макс. дедвейт:</span> {berth.maxDeadweight} т
+                  <span className="text-subtle">Макс. дедвейт:</span> {berth.maxDeadweight} т
                 </p>
               )}
             </div>
 
             {berth.vesselCalls && berth.vesselCalls.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-700">
-                <p className="text-sm font-medium text-slate-300 mb-2">Текущие суда:</p>
+              <div className="mt-4 pt-4 border-t border-default">
+                <p className="text-sm font-medium text-secondary mb-2">Текущие суда:</p>
                 {berth.vesselCalls.map((vc) => (
-                  <p key={vc.id} className="text-sm text-slate-400">
+                  <p key={vc.id} className="text-sm text-muted">
                     🚢 {vc.vessel.name}
                   </p>
                 ))}

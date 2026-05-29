@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { warehousesApi } from '../api';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
@@ -163,7 +163,7 @@ export default function WarehousesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {warehouses.length === 0 ? (
           <Card className="md:col-span-2 lg:col-span-3">
-            <p className="text-center text-slate-500 py-8">Нет данных</p>
+            <p className="text-center text-subtle py-8">Нет данных</p>
           </Card>
         ) : (
           warehouses.map((w) => {
@@ -174,11 +174,11 @@ export default function WarehousesPage() {
               <Card key={w.id} className="hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-slate-100">№{w.number}</h3>
+                    <h3 className="text-2xl font-bold text-primary">№{w.number}</h3>
                     {w.name && (
-                      <p className="text-sm text-slate-400">{w.name}</p>
+                      <p className="text-sm text-muted">{w.name}</p>
                     )}
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs text-subtle mt-1">
                       {WAREHOUSE_TYPE_LABELS[w.warehouseType]}
                     </p>
                   </div>
@@ -187,10 +187,10 @@ export default function WarehousesPage() {
                 <div className="space-y-3">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-slate-400">Заполненность</span>
-                      <span className="font-medium text-slate-100">{loadPercentage.toFixed(1)}%</span>
+                      <span className="text-muted">Заполненность</span>
+                      <span className="font-medium text-primary">{loadPercentage.toFixed(1)}%</span>
                     </div>
-                    <div className="w-full bg-slate-700 rounded-full h-2">
+                    <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
                       <div 
                         className={`h-2 rounded-full transition-all ${
                           loadPercentage > 90 ? 'bg-red-500' :
@@ -204,28 +204,28 @@ export default function WarehousesPage() {
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-slate-500">Вместимость</p>
+                      <p className="text-subtle">Вместимость</p>
                       <p className="stat-value">{w.capacity.toFixed(1)} т</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Загружено</p>
+                      <p className="text-subtle">Загружено</p>
                       <p className="stat-value">{(w.load || 0).toFixed(1)} т</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-slate-500">Свободно</p>
-                      <p className="font-semibold text-green-400">{freeSpace.toFixed(1)} т</p>
+                      <p className="text-subtle">Свободно</p>
+                      <p className="font-semibold text-green-700 dark:text-green-400">{freeSpace.toFixed(1)} т</p>
                     </div>
                   </div>
 
                   {w._count && (
-                    <div className="pt-3 border-t border-slate-700">
+                    <div className="pt-3 border-t border-default">
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Вагонов:</span>
-                        <span className="font-medium text-slate-100">{w._count.wagons}</span>
+                        <span className="text-muted">Вагонов:</span>
+                        <span className="font-medium text-primary">{w._count.wagons}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-400">Контейнеров:</span>
-                        <span className="font-medium text-slate-100">{w._count.containers}</span>
+                        <span className="text-muted">Контейнеров:</span>
+                        <span className="font-medium text-primary">{w._count.containers}</span>
                       </div>
                     </div>
                   )}

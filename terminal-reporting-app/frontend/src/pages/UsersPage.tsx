@@ -130,25 +130,25 @@ export default function UsersPage() {
 
       <Card>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-700">
-            <thead className="bg-slate-800/50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+            <thead className="bg-gray-100 dark:bg-slate-800/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Логин</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Роль</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Создан</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Действия</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">Логин</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">Роль</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase">Создан</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-muted uppercase">Действия</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+            <tbody className="bg-surface divide-y divide-gray-200 dark:divide-slate-700">
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">{user.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">{user.username}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">{user.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{user.username}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">
                     {ROLE_LABELS[user.role]}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-subtle">
                     {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">

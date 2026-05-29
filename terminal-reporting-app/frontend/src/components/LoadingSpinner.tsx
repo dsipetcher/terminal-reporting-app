@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -17,7 +17,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ size = 'md', tex
       <div
         className={`${sizeClasses[size]} border-blue-500 border-t-transparent rounded-full animate-spin`}
       />
-      {text && <p className="mt-4 text-slate-400">{text}</p>}
+      {text && <p className="mt-4 text-muted">{text}</p>}
     </div>
   );
 };

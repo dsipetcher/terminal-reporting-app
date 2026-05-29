@@ -56,4 +56,32 @@
   .stat-value {
     @apply font-semibold text-gray-900 dark:text-slate-100;
   }
+
+  .text-primary {
+    @apply text-gray-900 dark:text-slate-100;
+  }
+
+  .text-secondary {
+    @apply text-gray-800 dark:text-slate-300;
+  }
+
+  .text-muted {
+    @apply text-gray-800 dark:text-slate-400;
+  }
+
+  .text-subtle {
+    @apply text-gray-700 dark:text-slate-500;
+  }
+
+  .border-default {
+    @apply border-gray-200 dark:border-slate-700;
+  }
+
+  .bg-surface {
+    @apply bg-white dark:bg-slate-800;
+  }
+
+  .hover-surface {
+    @apply hover:bg-gray-100 dark:hover:bg-slate-700/50;
+  }
 }

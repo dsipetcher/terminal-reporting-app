@@ -297,26 +297,26 @@ export default function TrucksPage() {
       {/* Визиты */}
       <Card title="Визиты автотранспорта" className="mb-6">
         {visits.length === 0 ? (
-          <p className="text-center text-slate-500 py-8">Нет визитов</p>
+          <p className="text-center text-subtle py-8">Нет визитов</p>
         ) : (
           <div className="space-y-4">
             {visits.map((visit) => (
-              <div key={visit.id} className="border-l-4 border-green-500 pl-4 py-2 hover:bg-slate-700/50">
+              <div key={visit.id} className="border-l-4 border-green-500 pl-4 py-2 hover-surface">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-bold">{visit.truck.licensePlate}</h4>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-muted">
                       {visit.truck.carrier} | {TRUCK_TYPE_LABELS[visit.truck.truckType]}
                     </p>
-                    <p className="text-sm text-slate-400">Цель: {visit.purpose}</p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-muted">Цель: {visit.purpose}</p>
+                    <p className="text-sm text-subtle">
                       Тайм-слот: {formatDateTime(visit.timeSlot)}
                     </p>
                     {visit.timeIn && (
-                      <p className="text-sm text-slate-500">Въезд: {formatDateTime(visit.timeIn)}</p>
+                      <p className="text-sm text-subtle">Въезд: {formatDateTime(visit.timeIn)}</p>
                     )}
                     {visit.timeOut && (
-                      <p className="text-sm text-slate-500">Выезд: {formatDateTime(visit.timeOut)}</p>
+                      <p className="text-sm text-subtle">Выезд: {formatDateTime(visit.timeOut)}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 items-end">
@@ -354,15 +354,15 @@ export default function TrucksPage() {
       <Card title="Зарегистрированные автомобили">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {trucks.map((truck) => (
-            <div key={truck.id} className="border border-slate-700 rounded-lg p-4 hover:shadow-md">
+            <div key={truck.id} className="border border-default rounded-lg p-4 hover:shadow-md">
               <h4 className="font-bold text-lg">{truck.licensePlate}</h4>
-              <p className="text-sm text-slate-400">{TRUCK_TYPE_LABELS[truck.truckType]}</p>
-              <p className="text-sm text-slate-400">{truck.carrier}</p>
+              <p className="text-sm text-muted">{TRUCK_TYPE_LABELS[truck.truckType]}</p>
+              <p className="text-sm text-muted">{truck.carrier}</p>
               {truck.driverName && (
-                <p className="text-sm text-slate-500">Водитель: {truck.driverName}</p>
+                <p className="text-sm text-subtle">Водитель: {truck.driverName}</p>
               )}
               {truck._count && (
-                <p className="text-xs text-slate-500 mt-2">Визитов: {truck._count.visits}</p>
+                <p className="text-xs text-subtle mt-2">Визитов: {truck._count.visits}</p>
               )}
             </div>
           ))}

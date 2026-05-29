@@ -293,19 +293,19 @@ export default function WagonsPage() {
       <div className="space-y-4">
         {filteredWagons.length === 0 ? (
           <Card>
-            <p className="text-center text-slate-500 py-8">Нет вагонов</p>
+            <p className="text-center text-subtle py-8">Нет вагонов</p>
           </Card>
         ) : (
           filteredWagons.map((wagon) => (
             <Card key={wagon.id} className="hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-slate-100">Вагон №{wagon.number}</h3>
-                  <p className="text-sm text-slate-400">
+                  <h3 className="text-xl font-bold text-primary">Вагон №{wagon.number}</h3>
+                  <p className="text-sm text-muted">
                     Тип: {WAGON_TYPE_LABELS[wagon.wagonType]}
                   </p>
                   {wagon.trainNumber && (
-                    <p className="text-sm text-slate-400">Поезд: {wagon.trainNumber}</p>
+                    <p className="text-sm text-muted">Поезд: {wagon.trainNumber}</p>
                   )}
                 </div>
                 <StatusBadge
@@ -316,36 +316,36 @@ export default function WagonsPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <p className="text-xs text-slate-500">Прибытие</p>
+                  <p className="text-xs text-subtle">Прибытие</p>
                   <p className="font-medium">{formatDateTime(wagon.arrivalAt)}</p>
                 </div>
                 {wagon.cargo && (
                   <div>
-                    <p className="text-xs text-slate-500">Груз</p>
+                    <p className="text-xs text-subtle">Груз</p>
                     <p className="font-medium">{wagon.cargo}</p>
                   </div>
                 )}
                 {wagon.cargoWeight && (
                   <div>
-                    <p className="text-xs text-slate-500">Вес груза</p>
+                    <p className="text-xs text-subtle">Вес груза</p>
                     <p className="font-medium">{wagon.cargoWeight} т</p>
                   </div>
                 )}
                 {wagon.track && (
                   <div>
-                    <p className="text-xs text-slate-500">Путь</p>
+                    <p className="text-xs text-subtle">Путь</p>
                     <p className="font-medium">{wagon.track}</p>
                   </div>
                 )}
                 {wagon.warehouse && (
                   <div>
-                    <p className="text-xs text-slate-500">Склад</p>
+                    <p className="text-xs text-subtle">Склад</p>
                     <p className="font-medium">{wagon.warehouse.number}</p>
                   </div>
                 )}
                 {wagon.container && (
                   <div>
-                    <p className="text-xs text-slate-500">Контейнер</p>
+                    <p className="text-xs text-subtle">Контейнер</p>
                     <p className="font-medium">{wagon.container.containerNumber}</p>
                   </div>
                 )}
