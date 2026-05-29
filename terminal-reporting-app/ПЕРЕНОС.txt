@@ -1,0 +1,55 @@
+ИЛС — запуск одной командой (без установки Node.js)
+==================================================
+
+БЫСТРЫЙ СТАРТ
+  Дважды щёлкните:  run.bat
+
+  Откроется http://localhost:3001
+  Логин: admin
+  Пароль: admin
+
+КАК ЭТО РАБОТАЕТ
+  run.bat автоматически:
+    • использует встроенный Node.js из папки runtime/node (если есть)
+    • или скачивает его один раз (нужен интернет)
+    • или использует системный Node.js, если он установлен
+    • ставит зависимости, если их ещё нет
+    • создаёт базу SQLite с демо-данными, если её нет
+    • собирает интерфейс, если ещё не собран
+    • запускает ОДИН сервер: API + сайт на порту 3001
+
+ПОДГОТОВКА ФЛЕШКИ (на вашем ПК, один раз)
+  1. prepare-portable.bat  — всё скачает и соберёт (~5–10 мин, нужен интернет)
+
+  В PowerShell обязательно с точкой и слэшем:
+    .\prepare-portable.bat
+  (из корня репозитория или из папки terminal-reporting-app)
+
+  Перед подготовкой закройте run.bat / start.bat или выполните stop.bat
+  2. Скопируйте всю папку terminal-reporting-app на флешку
+
+  На другом компьютере:
+    • Node.js ставить НЕ нужно
+    • Интернет НЕ нужен (если скопировали runtime/node и node_modules)
+    • Просто run.bat
+
+ЧТО КОПИРОВАТЬ НА ФЛЕШКУ (полный offline-набор)
+  terminal-reporting-app/
+    run.bat
+    prepare-portable.bat
+    runtime/node/          ← portable Node.js
+    node_modules/
+    backend/node_modules/
+    frontend/node_modules/
+    frontend/dist/         ← собранный интерфейс
+    backend/prisma/dev.db  ← база данных
+    backend/uploads/       ← документы
+
+СБРОС БАЗЫ
+  Удалите backend/prisma/dev.db и снова запустите run.bat
+
+ОСТАНОВКА
+  stop.bat  или закройте окно консоли
+
+РАЗРАБОТКА (горячая перезагрузка)
+  start.bat — отдельно backend + frontend (как раньше)
