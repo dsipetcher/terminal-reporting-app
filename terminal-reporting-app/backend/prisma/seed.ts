@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { ensureDemoUsers } from './ensureUsers.js';
 import fs from 'fs';
 import path from 'path';
 import { logInfoFlow } from '../src/lib/ils';
@@ -884,28 +884,7 @@ async function seedParkWagonsAndOutbound(infra: Infra) {
 }
 
 async function seedUsers() {
-  await prisma.user.upsert({
-    where: { username: 'admin' },
-    update: {},
-    create: {
-      username: 'admin',
-      passwordHash: await bcrypt.hash('admin', 10),
-      role: 'ADMIN',
-      fullName: 'Администратор ИЛС',
-      department: 'ИТ',
-    },
-  });
-  await prisma.user.upsert({
-    where: { username: 'dispatcher' },
-    update: {},
-    create: {
-      username: 'dispatcher',
-      passwordHash: await bcrypt.hash('dispatcher', 10),
-      role: 'DISPATCHER',
-      fullName: 'Диспетчер угольно-нефтяного терминала',
-      department: 'Диспетчерская',
-    },
-  });
+  await ensureDemoUsers(prisma);
 }
 
 async function normalizeLegacyTransportStatuses() {
