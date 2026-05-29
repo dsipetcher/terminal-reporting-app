@@ -1,10 +1,10 @@
 {
-  "name": "terminal-reporting-app",
+  "name": "ils-terminal-root",
   "version": "1.0.0",
   "private": true,
   "description": "ИЛС угольно-нефтяного терминала — полный локальный запуск",
   "scripts": {
-    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "install:all": "npm install && cd backend && npm install && cd .. && cd frontend && npm install && cd ..",
     "install:clean": "npm run clean:deps && npm run install:all",
     "clean:deps": "node -e \"const fs=require('fs');const p=require('path');for (const d of ['node_modules','backend/node_modules','frontend/node_modules']) { fs.rmSync(p.join(process.cwd(),d), {recursive:true, force:true}); }\"",
     "db:init": "npm run prisma:generate --prefix backend && npm run prisma:push --prefix backend",

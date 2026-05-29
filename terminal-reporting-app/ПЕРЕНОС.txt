@@ -51,12 +51,14 @@
   Удалите backend/prisma/dev.db и снова запустите run.bat
 
 ЕСЛИ npm install ПАДАЕТ (EPERM, EISDIR, Prisma)
-  1. Закройте run.bat / start.bat (или stop.bat)
-  2. Запустите repair.bat из корня репозитория
-  3. Затем run.bat
+  1. git pull origin main
+  2. Закройте run.bat (или stop.bat)
+  3. Запустите repair.bat из корня репозитория
+  4. Затем run.bat
 
   repair.bat удалит node_modules и поставит зависимости заново.
-  Не копируйте node_modules с другого ПК — ставьте на месте через run.bat
+  В PowerShell: .\repair.bat
+  Не копируйте node_modules с другого ПК
 
 ОСТАНОВКА
   stop.bat  или закройте окно консоли

@@ -23,29 +23,53 @@ if not defined NODE_EXE (
     exit /b 1
 )
 
-echo Stopping servers...
+echo Stopping servers and Node processes...
 call "%~dp0stop.bat" >nul 2>nul
+taskkill /F /IM node.exe >nul 2>nul
+timeout /t 2 /nobreak >nul
 
-echo Removing broken node_modules...
-if exist "%~dp0backend\node_modules" rmdir /s /q "%~dp0backend\node_modules"
-if exist "%~dp0frontend\node_modules" rmdir /s /q "%~dp0frontend\node_modules"
-if exist "%~dp0node_modules" rmdir /s /q "%~dp0node_modules"
+echo Removing node_modules...
+powershell -NoProfile -Command "foreach ($d in @('node_modules','backend/node_modules','frontend/node_modules')) { $p = Join-Path (Get-Location) $d; if (Test-Path $p) { Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue } }"
+
+if exist "%~dp0backend\node_modules\terminal-reporting-app" (
+    echo Removing broken symlink backend/node_modules/terminal-reporting-app ...
+    powershell -NoProfile -Command "Remove-Item -LiteralPath 'backend/node_modules/terminal-reporting-app' -Recurse -Force -ErrorAction SilentlyContinue"
+)
 
 set "PATH=%NODE_DIR%;%PATH%"
-echo Installing dependencies...
+echo Installing root dependencies...
 if exist "%NODE_DIR%\npm.cmd" (
-    call "%NODE_DIR%\npm.cmd" run install:all
+    call "%NODE_DIR%\npm.cmd" install
 ) else (
-    call npm run install:all
+    call npm install
 )
 if errorlevel 1 goto fail
 
+echo Installing backend dependencies...
+cd /d "%~dp0backend"
+if exist "%NODE_DIR%\npm.cmd" (
+    call "%NODE_DIR%\npm.cmd" install
+) else (
+    call npm install
+)
+if errorlevel 1 goto fail
+
+echo Installing frontend dependencies...
+cd /d "%~dp0frontend"
+if exist "%NODE_DIR%\npm.cmd" (
+    call "%NODE_DIR%\npm.cmd" install
+) else (
+    call npm install
+)
+if errorlevel 1 goto fail
+
+cd /d "%~dp0"
 echo.
 echo Verifying Prisma...
 if exist "%NODE_DIR%\npm.cmd" (
-    call "%NODE_DIR%\npm.cmd" run db:init --prefix backend
+    call "%NODE_DIR%\npm.cmd" run db:init
 ) else (
-    call npm run db:init --prefix backend
+    call npm run db:init
 )
 if errorlevel 1 goto fail
 
@@ -56,6 +80,7 @@ pause
 exit /b 0
 
 :fail
+cd /d "%~dp0"
 echo.
 echo [ERROR] Repair failed.
 pause
