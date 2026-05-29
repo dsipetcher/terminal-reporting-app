@@ -22,8 +22,7 @@ export const ROUTE_ROLES: Record<string, AppRole[]> = {
 
 export function canAccessRoute(role: string | undefined, path: string): boolean {
   if (!role) return false;
-  if (role === 'ADMIN') return true;
-  const allowed = ROUTE_ROLES[path];
-  if (!allowed) return true;
-  return allowed.includes(role as AppRole);
+  // В прототипе для диплома ограничиваем только админ-раздел
+  if (path === '/users') return role === 'ADMIN';
+  return true;
 }

@@ -25,7 +25,6 @@ import {
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { AdminRoute, ProtectedRoute, RoleRoute } from './components/ProtectedRoute';
-import { canAccessRoute } from './lib/roleAccess';
 
 import DashboardPage from './pages/DashboardPage';
 import VesselCallsPage from './pages/VesselCallsPage';
@@ -55,16 +54,13 @@ function NavLinkItem({
   label: string;
   onClose: () => void;
 }) {
-  const { user } = useAuth();
-  if (!canAccessRoute(user?.role, to)) return null;
-
   return (
     <Link
       to={to}
       className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
       onClick={onClose}
     >
-      <Icon className="w-5 h-5" />
+      <Icon className="w-5 h-5 shrink-0" />
       <span className="font-medium">{label}</span>
     </Link>
   );
@@ -82,11 +78,11 @@ function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950">
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-800 shadow-xl flex flex-col transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0`}
       >
-        <div className="flex items-center justify-between p-6 border-b border-slate-800">
+        <div className="flex shrink-0 items-center justify-between p-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
             <Network className="w-6 h-6 text-blue-400" />
             <h2 className="text-xl font-bold text-white">ИЛС</h2>
@@ -99,7 +95,7 @@ function AppLayout() {
           </button>
         </div>
 
-        <nav className="p-4">
+        <nav className="flex-1 overflow-y-auto p-4 min-h-0">
           <NavLinkItem to="/" icon={LayoutDashboard} label="Панель ИЛС" onClose={() => setSidebarOpen(false)} />
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -152,7 +148,7 @@ function AppLayout() {
           )}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
+        <div className="shrink-0 p-4 border-t border-slate-800 bg-slate-900">
           <p className="text-xs text-slate-500 text-center">ИЛС v1.0 · прототип по ТЗ</p>
         </div>
       </aside>
@@ -240,6 +236,7 @@ function AppLayout() {
         <div
           className="fixed inset-0 bg-black bg-opacity-60 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
     </div>
