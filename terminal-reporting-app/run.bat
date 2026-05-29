@@ -62,11 +62,22 @@ exit /b 1
 :ensure_deps
 if exist "%~dp0backend\node_modules\tsx" if exist "%~dp0frontend\node_modules\vite" goto :eof
 echo [2/5] Installing dependencies...
+call "%~dp0stop.bat" >nul 2>nul
 set "PATH=%NODE_DIR%;%PATH%"
 if exist "%NODE_DIR%\npm.cmd" (
     call "%NODE_DIR%\npm.cmd" run install:all
 ) else (
     call npm run install:all
+)
+if errorlevel 1 (
+    echo [WARN] npm install failed, retrying with clean backend node_modules...
+    rmdir /s /q "%~dp0backend\node_modules" 2>nul
+    rmdir /s /q "%~dp0frontend\node_modules" 2>nul
+    if exist "%NODE_DIR%\npm.cmd" (
+        call "%NODE_DIR%\npm.cmd" run install:all
+    ) else (
+        call npm run install:all
+    )
 )
 if errorlevel 1 exit /b 1
 goto :eof

@@ -50,6 +50,12 @@
 СБРОС БАЗЫ
   Удалите backend/prisma/dev.db и снова запустите run.bat
 
+ЕСЛИ npm install ПАДАЕТ (EPERM, EISDIR, Prisma)
+  1. Закройте run.bat / start.bat (или stop.bat)
+  2. Удалите папки backend/node_modules и frontend/node_modules
+  3. Снова запустите run.bat или prepare-portable.bat
+  Не копируйте node_modules с другого ПК — ставьте на месте через run.bat
+
 ОСТАНОВКА
   stop.bat  или закройте окно консоли
 
