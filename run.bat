@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0terminal-reporting-app"
 if not exist "run.bat" (
-    echo [ERROR] Папка terminal-reporting-app не найдена
+    echo [ERROR] terminal-reporting-app folder not found
     pause
     exit /b 1
 )
