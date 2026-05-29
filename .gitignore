@@ -1,0 +1,3 @@
+# Portable Node.js runtime (created by scripts/ensure-node.ps1 or prepare-portable.bat)
+runtime/node/
+runtime/_node_extract/

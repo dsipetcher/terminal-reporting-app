@@ -1,5 +1,3 @@
-# Portable Node.js runtime (создаётся prepare-portable.bat или run.bat)
+# Portable Node.js runtime (repo root: ../runtime/node)
 runtime/node/
-
-# Скачанные архивы не нужны в репозитории
 runtime/_node_extract/

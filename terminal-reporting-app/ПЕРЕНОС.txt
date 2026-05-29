@@ -10,8 +10,8 @@
 
 КАК ЭТО РАБОТАЕТ
   run.bat автоматически:
-    • использует встроенный Node.js из папки runtime/node (если есть)
-    • или скачивает его один раз (нужен интернет)
+    • использует portable Node.js из runtime/node в корне репозитория
+    • или скачивает его один раз (нужен интернет): install-node.bat
     • или использует системный Node.js, если он установлен
     • ставит зависимости, если их ещё нет
     • создаёт базу SQLite с демо-данными, если её нет
@@ -34,10 +34,12 @@
     • Просто run.bat
 
 ЧТО КОПИРОВАТЬ НА ФЛЕШКУ (полный offline-набор)
-  terminal-reporting-app/
+  Весь репозиторий или как минимум:
     run.bat
+    install-node.bat
     prepare-portable.bat
-    runtime/node/          ← portable Node.js
+    runtime/node/          ← portable Node.js (корень репозитория)
+    terminal-reporting-app/
     node_modules/
     backend/node_modules/
     frontend/node_modules/

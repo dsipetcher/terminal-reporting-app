@@ -3,6 +3,9 @@ chcp 65001 >nul
 cd /d "%~dp0"
 title ILS - run
 
+set "REPO_ROOT=%~dp0.."
+set "NODE_DIR=%REPO_ROOT%\runtime\node"
+
 echo.
 echo  ========================================
 echo   ILS terminal reporting
@@ -40,24 +43,28 @@ exit /b 0
 
 :resolve_node
 set "NODE_EXE="
-if exist "%~dp0runtime\node\node.exe" set "NODE_EXE=%~dp0runtime\node\node.exe"
+if exist "%NODE_DIR%\node.exe" set "NODE_EXE=%NODE_DIR%\node.exe"
+if not defined NODE_EXE if exist "%~dp0runtime\node\node.exe" (
+    set "NODE_DIR=%~dp0runtime\node"
+    set "NODE_EXE=%NODE_DIR%\node.exe"
+)
 if not defined NODE_EXE where node >nul 2>nul && set "NODE_EXE=node"
 if defined NODE_EXE goto :eof
 echo [1/5] Downloading portable Node.js - internet required once...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\ensure-node.ps1"
-if exist "%~dp0runtime\node\node.exe" (
-    set "NODE_EXE=%~dp0runtime\node\node.exe"
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO_ROOT%\scripts\ensure-node.ps1"
+if exist "%NODE_DIR%\node.exe" (
+    set "NODE_EXE=%NODE_DIR%\node.exe"
     goto :eof
 )
-echo [ERROR] Node.js unavailable. Run prepare-portable.bat first.
+echo [ERROR] Node.js unavailable. Run install-node.bat or prepare-portable.bat
 exit /b 1
 
 :ensure_deps
 if exist "%~dp0backend\node_modules\tsx" if exist "%~dp0frontend\node_modules\vite" goto :eof
 echo [2/5] Installing dependencies...
-set "PATH=%~dp0runtime\node;%PATH%"
-if exist "%~dp0runtime\node\npm.cmd" (
-    call "%~dp0runtime\node\npm.cmd" run install:all
+set "PATH=%NODE_DIR%;%PATH%"
+if exist "%NODE_DIR%\npm.cmd" (
+    call "%NODE_DIR%\npm.cmd" run install:all
 ) else (
     call npm run install:all
 )
@@ -77,9 +84,9 @@ goto :eof
 :ensure_frontend
 if exist "%~dp0frontend\dist\index.html" goto :eof
 echo [4/5] Building frontend...
-set "PATH=%~dp0runtime\node;%PATH%"
-if exist "%~dp0runtime\node\npm.cmd" (
-    call "%~dp0runtime\node\npm.cmd" run build:portable
+set "PATH=%NODE_DIR%;%PATH%"
+if exist "%NODE_DIR%\npm.cmd" (
+    call "%NODE_DIR%\npm.cmd" run build:portable
 ) else (
     call npm run build:portable
 )
@@ -87,18 +94,18 @@ if errorlevel 1 exit /b 1
 goto :eof
 
 :run_db_init
-set "PATH=%~dp0runtime\node;%PATH%"
-if exist "%~dp0runtime\node\npm.cmd" (
-    call "%~dp0runtime\node\npm.cmd" run db:init >nul 2>nul
+set "PATH=%NODE_DIR%;%PATH%"
+if exist "%NODE_DIR%\npm.cmd" (
+    call "%NODE_DIR%\npm.cmd" run db:init >nul 2>nul
 ) else (
     call npm run db:init >nul 2>nul
 )
 goto :eof
 
 :run_db_setup
-set "PATH=%~dp0runtime\node;%PATH%"
-if exist "%~dp0runtime\node\npm.cmd" (
-    call "%~dp0runtime\node\npm.cmd" run db:setup
+set "PATH=%NODE_DIR%;%PATH%"
+if exist "%NODE_DIR%\npm.cmd" (
+    call "%NODE_DIR%\npm.cmd" run db:setup
 ) else (
     call npm run db:setup
 )
