@@ -65,13 +65,15 @@ if errorlevel 1 goto fail
 
 cd /d "%~dp0"
 echo.
-echo Verifying Prisma and demo users...
+echo Verifying Prisma, users and demo data...
 if exist "%NODE_DIR%\npm.cmd" (
     call "%NODE_DIR%\npm.cmd" run db:init
     call "%NODE_DIR%\npm.cmd" run db:ensure-users
+    call "%NODE_DIR%\npm.cmd" run db:ensure-data
 ) else (
     call npm run db:init
     call npm run db:ensure-users
+    call npm run db:ensure-data
 )
 if errorlevel 1 goto fail
 

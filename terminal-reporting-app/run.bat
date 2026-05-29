@@ -109,17 +109,12 @@ if not exist "%~dp0frontend\node_modules\vite\package.json" exit /b 1
 exit /b 0
 
 :ensure_database
-set "NEED_FULL_SEED=0"
-if not exist "%~dp0backend\prisma\dev.db" set "NEED_FULL_SEED=1"
 call :run_db_init
 if errorlevel 1 exit /b 1
 call :run_db_ensure_users
 if errorlevel 1 exit /b 1
-if "%NEED_FULL_SEED%"=="1" (
-    echo [3/5] Creating database demo data...
-    call :run_db_seed
-    if errorlevel 1 exit /b 1
-)
+call :run_db_ensure_data
+if errorlevel 1 exit /b 1
 goto :eof
 
 :ensure_frontend
@@ -158,6 +153,15 @@ if exist "%NODE_DIR%\npm.cmd" (
     call "%NODE_DIR%\npm.cmd" run db:ensure-users
 ) else (
     call npm run db:ensure-users
+)
+goto :eof
+
+:run_db_ensure_data
+set "PATH=%NODE_DIR%;%PATH%"
+if exist "%NODE_DIR%\npm.cmd" (
+    call "%NODE_DIR%\npm.cmd" run db:ensure-data
+) else (
+    call npm run db:ensure-data
 )
 goto :eof
 

@@ -10,9 +10,10 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 
-# SQLite
+# SQLite (demo database is committed for portable/offline use)
 *.db
 *.db-journal
+!prisma/dev.db
 
 # Prisma
 prisma/migrations/

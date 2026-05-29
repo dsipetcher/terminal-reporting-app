@@ -12,6 +12,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:ensure-users": "tsx prisma/ensureUsers.ts",
+    "prisma:ensure-data": "tsx prisma/ensureDemoData.ts",
     "db:setup": "prisma generate && prisma db push && tsx prisma/seed.ts"
   },
   "prisma": {

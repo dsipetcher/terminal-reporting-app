@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { ensureDemoUsers } from './ensureUsers.js';
+import { MOCK_BATCHES, EXPECTED_MOCK_BATCH_COUNT, type BatchDef } from './mockBatchCatalog.js';
 import fs from 'fs';
 import path from 'path';
 import { logInfoFlow } from '../src/lib/ils';
@@ -23,267 +24,6 @@ type Infra = {
   vesselTankerId: number;
   vesselCalls: Record<string, number>;
 };
-
-type BatchDef = {
-  containerNumber: string;
-  containerType: string;
-  cargoCategory: string;
-  supplierName: string;
-  cargoDescription: string;
-  quantityTons: number;
-  portOfLoading: string;
-  portOfDischarge: string;
-  warehouseKey?: 'coal' | 'oil';
-  location?: string;
-  vesselCallKey?: string;
-  /** Snapshot рейса для доставленных партий (судозаход уже удалён) */
-  shipVoyageSnapshot?: string;
-  /** 1–6 = текущий этап; delivered = все этапы пройдены */
-  progress: number | 'delivered';
-  routeNumber: string;
-  routeName: string;
-  origin: string;
-  destCode: string;
-  destName: string;
-  wagon?: { number: string; trainNumber: string; track: string };
-  blNumber?: string;
-};
-
-const MOCK_BATCHES: BatchDef[] = [
-  {
-    containerNumber: 'COAL-2026-0001',
-    containerType: 'COAL_ANTHRACITE',
-    cargoCategory: 'COAL',
-    supplierName: 'АО «Кузбассуголь»',
-    cargoDescription: 'Уголь каменный марки Д',
-    quantityTons: 4200,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'TRMER',
-    progress: 1,
-    routeNumber: 'RT-COAL-001',
-    routeName: 'Уголь · в пути в терминал',
-    origin: 'Кузбасс',
-    destCode: 'TRMER',
-    destName: 'Порт Мерсин',
-    wagon: { number: '53467821', trainNumber: '2845', track: 'Путь 12' },
-  },
-  {
-    containerNumber: 'COAL-2026-0002',
-    containerType: 'COAL_COKING',
-    cargoCategory: 'COAL',
-    supplierName: 'АО «Кузбассуголь»',
-    cargoDescription: 'Уголь коксующийся K',
-    quantityTons: 3800,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'CNQDG',
-    progress: 2,
-    routeNumber: 'RT-COAL-002',
-    routeName: 'Коксующийся уголь · прибыл на ж/д фронт',
-    origin: 'Кузбасс',
-    destCode: 'CNQDG',
-    destName: 'Порт Циндао',
-    wagon: { number: '53467822', trainNumber: '2851', track: 'Путь 8' },
-  },
-  {
-    containerNumber: 'COAL-2026-0003',
-    containerType: 'COAL_ANTHRACITE',
-    cargoCategory: 'COAL',
-    supplierName: 'АО «Кузбассуголь»',
-    cargoDescription: 'Уголь энергетический',
-    quantityTons: 5100,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'ITGIT',
-    warehouseKey: 'coal',
-    location: 'Сектор A-3',
-    vesselCallKey: '204N',
-    progress: 3,
-    routeNumber: 'RT-COAL-003',
-    routeName: 'Уголь · разгрузка на терминале',
-    origin: 'Кузбасс',
-    destCode: 'ITGIT',
-    destName: 'Порт Таранто',
-    wagon: { number: '53467823', trainNumber: '2860', track: 'Путь 12' },
-  },
-  {
-    containerNumber: 'COAL-2026-0004',
-    containerType: 'COAL_ANTHRACITE',
-    cargoCategory: 'COAL',
-    supplierName: 'АО «Кузбассуголь»',
-    cargoDescription: 'Уголь для экспорта в Турцию',
-    quantityTons: 4600,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'TRMER',
-    warehouseKey: 'coal',
-    location: 'Сектор B-1',
-    vesselCallKey: '204N',
-    progress: 4,
-    routeNumber: 'RT-COAL-004',
-    routeName: 'Уголь · на причале (вагон в парке)',
-    origin: 'Кузбасс',
-    destCode: 'TRMER',
-    destName: 'Порт Мерсин',
-    wagon: { number: '53467824', trainNumber: '2872', track: 'Путь 14' },
-  },
-  {
-    containerNumber: 'COAL-2026-0005',
-    containerType: 'COAL_COKING',
-    cargoCategory: 'COAL',
-    supplierName: 'АО «Кузбассуголь»',
-    cargoDescription: 'Коксующийся уголь — погрузка на судно',
-    quantityTons: 3900,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'CNQDG',
-    vesselCallKey: '204N',
-    progress: 5,
-    routeNumber: 'RT-COAL-005',
-    routeName: 'Уголь · на борту судна',
-    origin: 'Кузбасс',
-    destCode: 'CNQDG',
-    destName: 'Порт Циндао',
-  },
-  {
-    containerNumber: 'COAL-2026-0006',
-    containerType: 'COAL_ANTHRACITE',
-    cargoCategory: 'COAL',
-    supplierName: 'АО «Кузбассуголь»',
-    cargoDescription: 'Уголь · в пути морем',
-    quantityTons: 4400,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'CNQDG',
-    vesselCallKey: '206N',
-    progress: 6,
-    routeNumber: 'RT-COAL-006',
-    routeName: 'Уголь · морская перевозка',
-    origin: 'Кузбасс',
-    destCode: 'CNQDG',
-    destName: 'Порт Циндао',
-  },
-  {
-    containerNumber: 'OIL-2026-0001',
-    containerType: 'OIL_CRUDE',
-    cargoCategory: 'OIL',
-    supplierName: 'ЛУКОЙЛ-НПЗ',
-    cargoDescription: 'Нефть сырая (марка «Urals»)',
-    quantityTons: 6200,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'TRMER',
-    progress: 1,
-    routeNumber: 'RT-OIL-001',
-    routeName: 'Нефть · в пути в терминал',
-    origin: 'Самара (НПЗ)',
-    destCode: 'TRMER',
-    destName: 'Порт Мерсин',
-    wagon: { number: '75123401', trainNumber: 'N401', track: 'Путь 3 (налив)' },
-  },
-  {
-    containerNumber: 'OIL-2026-0002',
-    containerType: 'OIL_CRUDE',
-    cargoCategory: 'OIL',
-    supplierName: 'ЛУКОЙЛ-НПЗ',
-    cargoDescription: 'Нефть (марка «Urals»), партия 2',
-    quantityTons: 5800,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'CNQDG',
-    progress: 2,
-    routeNumber: 'RT-OIL-002',
-    routeName: 'Нефть · прибыл состав на ж/д фронт',
-    origin: 'Самара (НПЗ)',
-    destCode: 'CNQDG',
-    destName: 'Порт Циндао',
-    wagon: { number: '75123402', trainNumber: 'N408', track: 'Путь 3' },
-  },
-  {
-    containerNumber: 'OIL-2026-0003',
-    containerType: 'OIL_FUEL',
-    cargoCategory: 'OIL',
-    supplierName: 'ЛУКОЙЛ-НПЗ',
-    cargoDescription: 'Мазут топочный М-100',
-    quantityTons: 4100,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'ITGIT',
-    warehouseKey: 'oil',
-    location: 'Резервуар R-2',
-    vesselCallKey: 'T101',
-    progress: 3,
-    routeNumber: 'RT-OIL-003',
-    routeName: 'Мазут · разгрузка на терминале',
-    origin: 'Самара (НПЗ)',
-    destCode: 'ITGIT',
-    destName: 'Порт Таранто',
-    wagon: { number: '75123403', trainNumber: 'N415', track: 'Путь 5' },
-  },
-  {
-    containerNumber: 'OIL-2026-0004',
-    containerType: 'OIL_FUEL',
-    cargoCategory: 'OIL',
-    supplierName: 'ЛУКОЙЛ-НПЗ',
-    cargoDescription: 'Мазут · на причале налив',
-    quantityTons: 4500,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'CNQDG',
-    warehouseKey: 'oil',
-    location: 'Резервуар R-5',
-    vesselCallKey: 'T101',
-    progress: 4,
-    routeNumber: 'RT-OIL-004',
-    routeName: 'Мазут · причал (вагон в парке)',
-    origin: 'Самара (НПЗ)',
-    destCode: 'CNQDG',
-    destName: 'Порт Циндао',
-    wagon: { number: '75123404', trainNumber: 'N422', track: 'Путь 5' },
-  },
-  {
-    containerNumber: 'OIL-2026-0005',
-    containerType: 'OIL_CRUDE',
-    cargoCategory: 'OIL',
-    supplierName: 'ЛУКОЙЛ-НПЗ',
-    cargoDescription: 'Нефть · погрузка на танкер',
-    quantityTons: 5500,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'TRMER',
-    vesselCallKey: 'T102',
-    progress: 5,
-    routeNumber: 'RT-OIL-005',
-    routeName: 'Нефть · на борту танкера',
-    origin: 'Самара (НПЗ)',
-    destCode: 'TRMER',
-    destName: 'Порт Мерсин',
-  },
-  {
-    containerNumber: 'PETRO-2026-0001',
-    containerType: 'PETROLEUM',
-    cargoCategory: 'PETROLEUM',
-    supplierName: 'ЛУКОЙЛ-НПЗ',
-    cargoDescription: 'Дизельное топливо Евро-5',
-    quantityTons: 3200,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'TRMER',
-    progress: 1,
-    routeNumber: 'RT-PETRO-001',
-    routeName: 'Дизель · формирование на НПЗ (без ж/д)',
-    origin: 'Самара (НПЗ)',
-    destCode: 'TRMER',
-    destName: 'Порт Мерсин',
-  },
-  {
-    containerNumber: 'OIL-2026-0006',
-    containerType: 'OIL_FUEL',
-    cargoCategory: 'OIL',
-    supplierName: 'ЛУКОЙЛ-НПЗ',
-    cargoDescription: 'Топливный мазут — доставлено',
-    quantityTons: 4800,
-    portOfLoading: 'RUNVS',
-    portOfDischarge: 'CNQDG',
-    progress: 'delivered',
-    routeNumber: 'RT-OIL-006',
-    routeName: 'Мазут · цикл завершён',
-    origin: 'Самара (НПЗ)',
-    destCode: 'CNQDG',
-    destName: 'Порт Циндао',
-    shipVoyageSnapshot: 'T103',
-    blNumber: 'BL-OIL-006',
-  },
-];
 
 function buildStagesForProgress(
   progress: number | 'delivered',
@@ -320,6 +60,9 @@ async function seedCounterparties() {
     { code: 'LUKOIL-NPZ', name: 'ЛУКОЙЛ-НПЗ', partnerType: 'CLIENT', contact: 'Поставщик нефтепродуктов' },
     { code: 'RZD-TERM', name: 'РЖД-Терминал', partnerType: 'RAILWAY' },
     { code: 'MSC-AGENT', name: 'Судовой агент MSC', partnerType: 'AGENT' },
+    { code: 'EGYPT-TRADE', name: 'Egypt Bulk Trading', partnerType: 'CLIENT', contact: 'Импортёр угля' },
+    { code: 'CN-OIL-IMP', name: 'China Oil Import Co.', partnerType: 'CLIENT', contact: 'Импорт нефти' },
+    { code: 'CUSTOMS-NVR', name: 'Таможня Новороссийск', partnerType: 'CUSTOMS' },
   ];
   for (const p of partners) {
     await prisma.counterparty.upsert({ where: { code: p.code }, update: p, create: p });
@@ -332,6 +75,8 @@ async function seedDirectories() {
     { code: 'TRMER', name: 'Мерсин', country: 'TR' },
     { code: 'CNQDG', name: 'Циндао', country: 'CN' },
     { code: 'ITGIT', name: 'Таранто', country: 'IT' },
+    { code: 'EGALY', name: 'Александрия', country: 'EG' },
+    { code: 'INMUM', name: 'Mumbai', country: 'IN' },
   ];
   for (const port of ports) {
     await prisma.portDirectory.upsert({ where: { code: port.code }, update: {}, create: port });
@@ -491,6 +236,45 @@ async function seedTerminalInfrastructure(): Promise<Infra> {
       eta: new Date('2026-05-25T06:00:00'),
       ata: new Date('2026-05-25T07:30:00'),
     },
+    {
+      key: '207N',
+      vesselId: vesselBulk.id,
+      voyage: '207N',
+      berthId: berthBulk.id,
+      status: 'ARRIVED',
+      purpose: 'Погрузка угля — оперативный заказ',
+      eta: new Date('2026-05-26T09:00:00'),
+      ata: new Date('2026-05-26T10:15:00'),
+    },
+    {
+      key: '208N',
+      vesselId: vesselBulk.id,
+      voyage: '208N',
+      berthId: berthBulk.id,
+      status: 'EN_ROUTE',
+      purpose: 'Ожидаемый рейс угля в Египет',
+      eta: new Date('2026-05-28T12:00:00'),
+    },
+    {
+      key: 'T103',
+      vesselId: vesselTanker.id,
+      voyage: 'T103',
+      berthId: berthLiquid.id,
+      status: 'DEPARTED',
+      purpose: 'Рейс нефти в Китай (архив)',
+      eta: new Date('2026-04-20T10:00:00'),
+      ata: new Date('2026-04-20T11:00:00'),
+      atd: new Date('2026-04-22T18:00:00'),
+    },
+    {
+      key: 'T104',
+      vesselId: vesselTanker.id,
+      voyage: 'T104',
+      berthId: berthLiquid.id,
+      status: 'EN_ROUTE',
+      purpose: 'Ожидаемый танкер Urals',
+      eta: new Date('2026-05-29T08:00:00'),
+    },
   ];
 
   const vesselCalls: Record<string, number> = {};
@@ -589,47 +373,105 @@ async function seedMockBatches(infra: Infra) {
   const lukoil = await prisma.counterparty.findUnique({ where: { code: 'LUKOIL-NPZ' } });
   const consistCache: Record<string, number> = {};
 
-  const orderCoal = await prisma.logisticsOrder.create({
-    data: {
-      orderNumber: 'ILS-2026-COAL',
-      orderType: 'EXPORT_BULK',
-      managementLevel: 'DISPATCH',
-      status: 'IN_PROGRESS',
-      counterpartyId: kuzbass!.id,
-      supplierName: 'АО «Кузбассуголь»',
-      cargoDescription: 'Экспорт угля (6 партий)',
-      cargoWeight: 26000,
-      origin: 'Кузбасс',
-      destination: 'Мерсин · Циндао · Таранто',
-      plannedStart: new Date('2026-05-15'),
-      actualStart: new Date('2026-05-16'),
-      vesselCallId: infra.vesselCalls['204N'],
-      notes: 'Мок: входящие составы (1–3), парк после разгрузки, исходящий 3901',
-    },
-  });
+  const coalWeight = MOCK_BATCHES.filter((b) => b.orderKey === 'coal').reduce((s, b) => s + b.quantityTons, 0);
+  const oilWeight = MOCK_BATCHES.filter((b) => b.orderKey === 'oil').reduce((s, b) => s + b.quantityTons, 0);
 
-  const orderOil = await prisma.logisticsOrder.create({
-    data: {
-      orderNumber: 'ILS-2026-OIL',
-      orderType: 'EXPORT_BULK',
-      managementLevel: 'DISPATCH',
-      status: 'IN_PROGRESS',
-      counterpartyId: lukoil!.id,
-      supplierName: 'ЛУКОЙЛ-НПЗ',
-      cargoDescription: 'Экспорт нефти и нефтепродуктов (6 партий)',
-      cargoWeight: 29100,
-      origin: 'Самара (НПЗ)',
-      destination: 'Мерсин · Циндао · Таранто',
-      plannedStart: new Date('2026-05-14'),
-      actualStart: new Date('2026-05-15'),
-      vesselCallId: infra.vesselCalls['T101'],
-      notes: 'Мок: ж/д цистерны, расформирование, доставленная партия без судозахода',
-    },
-  });
+  const orders = {
+    coal: await prisma.logisticsOrder.create({
+      data: {
+        orderNumber: 'ILS-2026-COAL',
+        orderType: 'EXPORT_BULK',
+        managementLevel: 'DISPATCH',
+        status: 'IN_PROGRESS',
+        counterpartyId: kuzbass!.id,
+        supplierName: 'АО «Кузбассуголь»',
+        cargoDescription: `Экспорт угля (${MOCK_BATCHES.filter((b) => b.orderKey === 'coal').length} партий)`,
+        cargoWeight: coalWeight,
+        origin: 'Кузбасс',
+        destination: 'Мерсин · Циндао · Таранто · Александрия · Mumbai',
+        plannedStart: new Date('2026-05-15'),
+        actualStart: new Date('2026-05-16'),
+        vesselCallId: infra.vesselCalls['204N'],
+        notes: 'Диспетчерский заказ: входящие составы, парк, погрузка на суда',
+      },
+    }),
+    oil: await prisma.logisticsOrder.create({
+      data: {
+        orderNumber: 'ILS-2026-OIL',
+        orderType: 'EXPORT_BULK',
+        managementLevel: 'DISPATCH',
+        status: 'IN_PROGRESS',
+        counterpartyId: lukoil!.id,
+        supplierName: 'ЛУКОЙЛ-НПЗ',
+        cargoDescription: `Экспорт нефти и НП (${MOCK_BATCHES.filter((b) => b.orderKey === 'oil').length} партий)`,
+        cargoWeight: oilWeight,
+        origin: 'Самара (НПЗ)',
+        destination: 'Мерсин · Циндао · Таранто · Александрия · Mumbai',
+        plannedStart: new Date('2026-05-14'),
+        actualStart: new Date('2026-05-15'),
+        vesselCallId: infra.vesselCalls['T101'],
+        notes: 'Диспетчерский заказ: цистерны, резервуары, танкеры',
+      },
+    }),
+    planning: await prisma.logisticsOrder.create({
+      data: {
+        orderNumber: 'ILS-2026-PLAN-Q3',
+        orderType: 'EXPORT_BULK',
+        managementLevel: 'PLANNING',
+        status: 'PLANNED',
+        counterpartyId: kuzbass!.id,
+        supplierName: 'АО «Кузбассуголь»',
+        cargoDescription: 'Плановый экспорт угля Q3 2026',
+        cargoWeight: MOCK_BATCHES.filter((b) => b.orderKey === 'planning').reduce((s, b) => s + b.quantityTons, 0),
+        origin: 'Кемерово',
+        destination: 'Мерсин · Циндао',
+        plannedStart: new Date('2026-07-01'),
+        plannedEnd: new Date('2026-09-30'),
+        notes: 'Планирование: составы ещё в пути, судозаход не назначен',
+      },
+    }),
+    operational: await prisma.logisticsOrder.create({
+      data: {
+        orderNumber: 'ILS-2026-OPS-01',
+        orderType: 'STORAGE',
+        managementLevel: 'OPERATIONAL',
+        status: 'IN_PROGRESS',
+        counterpartyId: kuzbass!.id,
+        supplierName: 'АО «Кузбассуголь»',
+        cargoDescription: 'Оперативное хранение и отгрузка со склада',
+        cargoWeight: MOCK_BATCHES.filter((b) => b.orderKey === 'operational').reduce((s, b) => s + b.quantityTons, 0),
+        origin: 'Кузбасс',
+        destination: 'Порт Мерсин',
+        plannedStart: new Date('2026-05-18'),
+        actualStart: new Date('2026-05-19'),
+        vesselCallId: infra.vesselCalls['207N'],
+        notes: 'Оперативный уровень: партии на складе и в парке',
+      },
+    }),
+    archive: await prisma.logisticsOrder.create({
+      data: {
+        orderNumber: 'ILS-2025-ARCHIVE',
+        orderType: 'EXPORT_BULK',
+        managementLevel: 'DISPATCH',
+        status: 'COMPLETED',
+        counterpartyId: lukoil!.id,
+        supplierName: 'ЛУКОЙЛ-НПЗ',
+        cargoDescription: 'Архив доставленных партий 2025–2026',
+        cargoWeight: MOCK_BATCHES.filter((b) => b.orderKey === 'archive').reduce((s, b) => s + b.quantityTons, 0),
+        origin: 'Самара (НПЗ)',
+        destination: 'Циндао · Таранто',
+        plannedStart: new Date('2025-11-01'),
+        plannedEnd: new Date('2026-04-30'),
+        actualStart: new Date('2025-11-05'),
+        actualEnd: new Date('2026-04-22'),
+        notes: 'Завершённые маршруты без активных судозаходов',
+      },
+    }),
+  };
 
   for (const batch of MOCK_BATCHES) {
+    const orderId = orders[batch.orderKey].id;
     const isCoal = batch.cargoCategory === 'COAL';
-    const orderId = isCoal ? orderCoal.id : orderOil.id;
     const whId =
       batch.warehouseKey === 'coal'
         ? infra.whCoalId
@@ -810,41 +652,49 @@ async function seedMockBatches(infra: Infra) {
     ilsFunction: 'PLANNING',
     eventType: 'CREATE',
     entityType: 'LOGISTICS_ORDER',
-    entityId: orderCoal.id,
-    orderId: orderCoal.id,
-    message: 'Seed: 13 партий груза — ж/д составы, парк, исходящий состав',
+    entityId: orders.coal.id,
+    orderId: orders.coal.id,
+    message: `Seed: ${MOCK_BATCHES.length} cargo batches across ${Object.keys(orders).length} logistics orders`,
+  });
+
+  await logInfoFlow({
+    ilsFunction: 'DISPATCH',
+    eventType: 'UPDATE',
+    entityType: 'LOGISTICS_ORDER',
+    entityId: orders.oil.id,
+    orderId: orders.oil.id,
+    message: 'Демо: активные рейсы танкеров T101, T102 на наливном причале',
   });
 }
 
 async function seedParkWagonsAndOutbound(infra: Infra) {
-  const parkDefs = [
-    {
-      number: '53467901',
-      trainNumber: '2845',
-      track: 'Путь 15',
-      wagonType: 'GONDOLA' as const,
-      warehouseId: infra.whCoalId,
-      inOutbound: true,
-    },
-    {
-      number: '53467902',
-      trainNumber: '2851',
-      track: 'Путь 15',
-      wagonType: 'GONDOLA' as const,
-      warehouseId: infra.whCoalId,
-      inOutbound: true,
-    },
-    {
-      number: '75123501',
-      trainNumber: 'N420',
-      track: 'Путь 6',
-      wagonType: 'TANK' as const,
-      warehouseId: infra.whOilId,
-      inOutbound: false,
-    },
+  const parkDefs: {
+    number: string;
+    trainNumber: string;
+    track: string;
+    wagonType: 'GONDOLA' | 'TANK';
+    warehouseId: number;
+    outboundTrain?: string;
+  }[] = [
+    { number: '53467901', trainNumber: '2845', track: 'Путь 15', wagonType: 'GONDOLA', warehouseId: infra.whCoalId, outboundTrain: '3901' },
+    { number: '53467902', trainNumber: '2851', track: 'Путь 15', wagonType: 'GONDOLA', warehouseId: infra.whCoalId, outboundTrain: '3901' },
+    { number: '53467903', trainNumber: '2860', track: 'Путь 15', wagonType: 'GONDOLA', warehouseId: infra.whCoalId, outboundTrain: '3901' },
+    { number: '53467904', trainNumber: '2872', track: 'Путь 15', wagonType: 'GONDOLA', warehouseId: infra.whCoalId, outboundTrain: '3901' },
+    { number: '53467905', trainNumber: '2880', track: 'Путь 17', wagonType: 'GONDOLA', warehouseId: infra.whCoalId, outboundTrain: '3901' },
+    { number: '53467906', trainNumber: '2890', track: 'Путь 17', wagonType: 'GONDOLA', warehouseId: infra.whCoalId },
+    { number: '53467907', trainNumber: '2900', track: 'Путь 18', wagonType: 'GONDOLA', warehouseId: infra.whCoalId },
+    { number: '53467908', trainNumber: '2910', track: 'Путь 18', wagonType: 'GONDOLA', warehouseId: infra.whCoalId },
+    { number: '75123501', trainNumber: 'N420', track: 'Путь 6', wagonType: 'TANK', warehouseId: infra.whOilId, outboundTrain: '3902' },
+    { number: '75123502', trainNumber: 'N425', track: 'Путь 6', wagonType: 'TANK', warehouseId: infra.whOilId, outboundTrain: '3902' },
+    { number: '75123503', trainNumber: 'N430', track: 'Путь 7', wagonType: 'TANK', warehouseId: infra.whOilId, outboundTrain: '3902' },
+    { number: '75123504', trainNumber: 'N435', track: 'Путь 7', wagonType: 'TANK', warehouseId: infra.whOilId },
+    { number: '75123505', trainNumber: 'N440', track: 'Путь 8', wagonType: 'TANK', warehouseId: infra.whOilId },
+    { number: '75123506', trainNumber: 'N445', track: 'Путь 8', wagonType: 'TANK', warehouseId: infra.whOilId },
   ];
 
-  const wagonIds: number[] = [];
+  const outboundGroups: Record<string, number[]> = { '3901': [], '3902': [] };
+  const formedAt = new Date();
+
   for (const def of parkDefs) {
     const wagon = await prisma.wagon.create({
       data: {
@@ -857,11 +707,12 @@ async function seedParkWagonsAndOutbound(infra: Infra) {
         status: 'IN_PARK',
       },
     });
-    if (def.inOutbound) wagonIds.push(wagon.id);
+    if (def.outboundTrain) {
+      outboundGroups[def.outboundTrain].push(wagon.id);
+    }
   }
 
-  const formedAt = new Date();
-  const outbound = await prisma.trainConsist.create({
+  const outbound3901 = await prisma.trainConsist.create({
     data: {
       trainNumber: '3901',
       destination: 'Кемерово',
@@ -873,11 +724,32 @@ async function seedParkWagonsAndOutbound(infra: Infra) {
     },
   });
 
-  await prisma.wagon.updateMany({
-    where: { id: { in: wagonIds } },
+  const outbound3902 = await prisma.trainConsist.create({
     data: {
-      trainConsistId: outbound.id,
+      trainNumber: '3902',
+      destination: 'Самара (НПЗ)',
+      track: 'Путь 9',
+      direction: 'OUTBOUND',
+      arrivalAt: formedAt,
+      formedAt,
+      status: 'FORMING',
+    },
+  });
+
+  await prisma.wagon.updateMany({
+    where: { id: { in: outboundGroups['3901'] } },
+    data: {
+      trainConsistId: outbound3901.id,
       trainNumber: '3901',
+      status: 'FORMING',
+    },
+  });
+
+  await prisma.wagon.updateMany({
+    where: { id: { in: outboundGroups['3902'] } },
+    data: {
+      trainConsistId: outbound3902.id,
+      trainNumber: '3902',
       status: 'FORMING',
     },
   });
@@ -964,47 +836,79 @@ async function seedOrderDocuments() {
   const oilOrder = await prisma.logisticsOrder.findUnique({
     where: { orderNumber: 'ILS-2026-OIL' },
   });
-  if (!oilOrder) return;
+  if (oilOrder) {
+    const blDoc = {
+      fileName: 'Коносамент T103.txt',
+      content: 'Архивный коносамент по доставленным партиям.',
+      documentType: 'WAYBILL',
+      description: 'Архив по доставленным партиям',
+    };
+    ensureUploadsDir(oilOrder.id);
+    const blStored = `${Date.now()}-bl-oil.txt`;
+    fs.writeFileSync(path.join(orderUploadsDir(oilOrder.id), blStored), blDoc.content, 'utf8');
+    await prisma.logisticsOrderDocument.create({
+      data: {
+        orderId: oilOrder.id,
+        fileName: blDoc.fileName,
+        storedName: blStored,
+        mimeType: 'text/plain',
+        fileSize: Buffer.byteLength(blDoc.content, 'utf8'),
+        documentType: blDoc.documentType,
+        description: blDoc.description,
+      },
+    });
+  }
 
-  const blDoc = {
-    fileName: 'Коносамент T103.txt',
-    content: 'Архивный коносамент по доставленной партии OIL-2026-0006.',
-    documentType: 'WAYBILL',
-    description: 'Архив по доставленной партии',
-  };
-  ensureUploadsDir(oilOrder.id);
-  const blStored = `${Date.now()}-bl-oil.txt`;
-  fs.writeFileSync(path.join(orderUploadsDir(oilOrder.id), blStored), blDoc.content, 'utf8');
-  await prisma.logisticsOrderDocument.create({
-    data: {
-      orderId: oilOrder.id,
-      fileName: blDoc.fileName,
-      storedName: blStored,
-      mimeType: 'text/plain',
-      fileSize: Buffer.byteLength(blDoc.content, 'utf8'),
-      documentType: blDoc.documentType,
-      description: blDoc.description,
-    },
+  const planOrder = await prisma.logisticsOrder.findUnique({
+    where: { orderNumber: 'ILS-2026-PLAN-Q3' },
   });
+  if (planOrder) {
+    const planDoc = {
+      fileName: 'План отгрузок Q3.txt',
+      content: 'Плановый график ж/д и морских отгрузок угля на Q3 2026.',
+      documentType: 'OTHER',
+      description: 'Планирование',
+    };
+    ensureUploadsDir(planOrder.id);
+    const stored = `${Date.now()}-plan-q3.txt`;
+    fs.writeFileSync(path.join(orderUploadsDir(planOrder.id), stored), planDoc.content, 'utf8');
+    await prisma.logisticsOrderDocument.create({
+      data: {
+        orderId: planOrder.id,
+        fileName: planDoc.fileName,
+        storedName: stored,
+        mimeType: 'text/plain',
+        fileSize: Buffer.byteLength(planDoc.content, 'utf8'),
+        documentType: planDoc.documentType,
+        description: planDoc.description,
+      },
+    });
+  }
 }
 
-async function main() {
+async function runDemoSeed() {
   await seedUsers();
   await seedCounterparties();
   await seedDirectories();
   const infra = await seedTerminalInfrastructure();
   await normalizeLegacyTransportStatuses();
   await clearCargoData();
-  await pruneStaleVesselCalls(['204N', '205N', '206N', 'T101', 'T102']);
+  await pruneStaleVesselCalls(['204N', '205N', '206N', '207N', '208N', 'T101', 'T102', 'T103', 'T104']);
   await seedMockBatches(infra);
   await seedParkWagonsAndOutbound(infra);
   await seedOrderDocuments();
-  console.log(`ILS seed completed: ${MOCK_BATCHES.length} cargo batches + park/outbound wagons`);
+  console.log(`ILS seed completed: ${MOCK_BATCHES.length} cargo batches, ${EXPECTED_MOCK_BATCH_COUNT} expected`);
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+export { runDemoSeed, MOCK_BATCHES, EXPECTED_MOCK_BATCH_COUNT };
+
+const isDirectRun = process.argv[1]?.replace(/\\/g, '/').endsWith('prisma/seed.ts');
+
+if (isDirectRun) {
+  runDemoSeed()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}

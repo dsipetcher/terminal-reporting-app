@@ -38,17 +38,19 @@
     run.bat
     install-node.bat
     prepare-portable.bat
+    repair.bat
     runtime/node/          ← portable Node.js (корень репозитория)
     terminal-reporting-app/
-    node_modules/
-    backend/node_modules/
-    frontend/node_modules/
-    frontend/dist/         ← собранный интерфейс
-    backend/prisma/dev.db  ← база данных
-    backend/uploads/       ← документы
+      backend/prisma/dev.db  ← демо-БД (есть в git)
+      frontend/dist/         ← собранный интерфейс
 
-СБРОС БАЗЫ
-  Удалите backend/prisma/dev.db и снова запустите run.bat
+ДЕМО-ДАННЫЕ (13 партий, составы, документы)
+  Скрипт seed.ts лежит в репозитории.
+  run.bat при каждом запуске проверяет БД и при необходимости
+  заполняет её: npm run db:ensure-data
+
+  Если данных нет — удалите backend/prisma/dev.db и запустите run.bat
+  или выполните: npm run db:ensure-data
 
 ЕСЛИ npm install ПАДАЕТ (EPERM, EISDIR, Prisma)
   1. git pull origin main
