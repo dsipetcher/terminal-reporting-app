@@ -1,18 +1,5 @@
-# Root gitignore
-node_modules/
-.env
-.env.local
-*.log
-dist/
-build/
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+# Portable Node.js runtime (создаётся prepare-portable.bat или run.bat)
+runtime/node/
 
-# Database
-backend/*.db
-backend/*.db-journal
-
-# Prisma migrations (optional - закомментируйте если хотите сохранить миграции)
-# backend/prisma/migrations/
+# Скачанные архивы не нужны в репозитории
+runtime/_node_extract/

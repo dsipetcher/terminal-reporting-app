@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import prisma from './lib/prisma';
 import { authenticateToken } from './middleware/auth';
 
@@ -18,6 +20,11 @@ import infoFlowsRouter from './routes/infoFlows';
 import directoriesRouter from './routes/directories';
 import logisticsRoutesRouter from './routes/logisticsRoutes';
 import trainConsistsRouter from './routes/trainConsists';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..', '..');
+const frontendDist = path.join(projectRoot, 'frontend', 'dist');
 
 const app = express();
 
@@ -126,9 +133,28 @@ app.use('/api/info-flows', authenticateToken, infoFlowsRouter);
 app.use('/api/directories', authenticateToken, directoriesRouter);
 app.use('/api/logistics-routes', authenticateToken, logisticsRoutesRouter);
 
-const PORT = 3001;
-app.listen(PORT, () => {
-  console.log('Information Logistics System (ILS) API');
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/api/health`);
+const serveFrontend = process.env.SERVE_FRONTEND === '1';
+if (serveFrontend) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(frontendDist, 'index.html'), (err) => {
+      if (err) next(err);
+    });
+  });
+}
+
+const PORT = Number(process.env.PORT) || 3001;
+const HOST = process.env.HOST || '127.0.0.1';
+
+app.listen(PORT, HOST, () => {
+  const url = `http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}`;
+  console.log('Information Logistics System (ILS)');
+  console.log(`Server running on ${url}`);
+  if (serveFrontend) {
+    console.log(`Application UI: ${url}`);
+    console.log('Login: admin / admin');
+  } else {
+    console.log(`Health check: ${url}/api/health`);
+  }
 });

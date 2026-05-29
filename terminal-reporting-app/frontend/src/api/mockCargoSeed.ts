@@ -339,9 +339,9 @@ const PARK_WAGONS: Array<{
   warehouseId: number;
   wagonType: Wagon['wagonType'];
 }> = [
-  { id: 9, number: '53467901', trainNumber: '2845', track: 'Путь 15', warehouseId: 1, wagonType: 'GONDOLA' },
-  { id: 10, number: '53467902', trainNumber: '2851', track: 'Путь 15', warehouseId: 1, wagonType: 'GONDOLA' },
-  { id: 11, number: '75123501', trainNumber: 'N420', track: 'Путь 6', warehouseId: 2, wagonType: 'TANK' },
+  { id: 9, number: '53467901', trainNumber: '2845', track: 'Путь 15', warehouseId: 1, wagonType: 'GONDOLA' as Wagon['wagonType'] },
+  { id: 10, number: '53467902', trainNumber: '2851', track: 'Путь 15', warehouseId: 1, wagonType: 'GONDOLA' as Wagon['wagonType'] },
+  { id: 11, number: '75123501', trainNumber: 'N420', track: 'Путь 6', warehouseId: 2, wagonType: 'TANK' as Wagon['wagonType'] },
 ];
 
 const OUTBOUND_CONSIST_DEF = {
@@ -506,7 +506,7 @@ export const demoTrainConsists: TrainConsist[] = (() => {
     direction: 'OUTBOUND',
     arrivalAt: new Date(t0 - 3600000).toISOString(),
     formedAt: new Date(t0 - 3600000).toISOString(),
-    status: 'FORMING',
+    status: 'FORMING' as TrainConsist['status'],
     _count: { wagons: OUTBOUND_CONSIST_DEF.wagonIds.length },
     createdAt: now,
     updatedAt: now,

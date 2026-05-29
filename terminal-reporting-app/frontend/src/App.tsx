@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import { Network, Menu, X, LogOut, Moon, Sun } from 'lucide-react';
@@ -46,7 +46,6 @@ function AppLayout() {
             <Network className="w-6 h-6 text-blue-400" />
             <div>
               <h2 className="text-lg font-bold text-white leading-tight">ИЛС</h2>
-              <p className="text-[10px] text-slate-500">угольно-нефтяной терминал</p>
             </div>
           </div>
           <button

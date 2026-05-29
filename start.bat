@@ -1,7 +1,7 @@
 @echo off
 cd /d "%~dp0terminal-reporting-app"
 if not exist "package.json" (
-    echo [ERROR] Project not found in %~dp0terminal-reporting-app
+    echo [ERROR] Папка terminal-reporting-app не найдена
     pause
     exit /b 1
 )

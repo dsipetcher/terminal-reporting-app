@@ -7,7 +7,7 @@ export default defineConfig({
   
   // Для GitHub Pages - используйте название вашего репозитория
   // Например: base: '/terminal-reporting-app/'
-  base: '/terminal-reporting-app/',
+  base: process.env.VITE_BASE_PATH || '/terminal-reporting-app/',
   
   server: {
     host: '0.0.0.0',

@@ -1,4 +1,6 @@
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? '/api' : 'http://localhost:3001/api');
 
 export const IS_DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 
