@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { trucksApi, truckVisitsApi } from '../api';
 import type { Truck, TruckVisit } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -157,26 +157,26 @@ export default function TrucksPage() {
         <Card className="mb-6" title="Новый автомобиль">
           <form onSubmit={handleTruckSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Гос. номер *
               </label>
               <input
                 type="text"
                 value={truckForm.licensePlate}
                 onChange={(e) => setTruckForm({ ...truckForm, licensePlate: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Тип *
               </label>
               <select
                 value={truckForm.truckType}
                 onChange={(e) => setTruckForm({ ...truckForm, truckType: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               >
                 {Object.entries(TRUCK_TYPE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -185,27 +185,27 @@ export default function TrucksPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Перевозчик *
               </label>
               <input
                 type="text"
                 value={truckForm.carrier}
                 onChange={(e) => setTruckForm({ ...truckForm, carrier: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Водитель
               </label>
               <input
                 type="text"
                 value={truckForm.driverName}
                 onChange={(e) => setTruckForm({ ...truckForm, driverName: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
@@ -225,13 +225,13 @@ export default function TrucksPage() {
         <Card className="mb-6" title="Новый визит">
           <form onSubmit={handleVisitSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Автомобиль *
               </label>
               <select
                 value={visitForm.truckId}
                 onChange={(e) => setVisitForm({ ...visitForm, truckId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               >
                 <option value="">Выберите автомобиль</option>
@@ -244,41 +244,41 @@ export default function TrucksPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Тайм-слот *
               </label>
               <input
                 type="datetime-local"
                 value={toDateTimeLocal(visitForm.timeSlot)}
                 onChange={(e) => setVisitForm({ ...visitForm, timeSlot: fromDateTimeLocal(e.target.value) })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Цель визита *
               </label>
               <input
                 type="text"
                 value={visitForm.purpose}
                 onChange={(e) => setVisitForm({ ...visitForm, purpose: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 placeholder="Вывоз контейнера"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Номер ворот
               </label>
               <input
                 type="text"
                 value={visitForm.gateNumber}
                 onChange={(e) => setVisitForm({ ...visitForm, gateNumber: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
@@ -297,26 +297,26 @@ export default function TrucksPage() {
       {/* Визиты */}
       <Card title="Визиты автотранспорта" className="mb-6">
         {visits.length === 0 ? (
-          <p className="text-center text-gray-500 py-8">Нет визитов</p>
+          <p className="text-center text-slate-500 py-8">Нет визитов</p>
         ) : (
           <div className="space-y-4">
             {visits.map((visit) => (
-              <div key={visit.id} className="border-l-4 border-green-500 pl-4 py-2 hover:bg-gray-50">
+              <div key={visit.id} className="border-l-4 border-green-500 pl-4 py-2 hover:bg-slate-700/50">
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-bold">{visit.truck.licensePlate}</h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-slate-400">
                       {visit.truck.carrier} | {TRUCK_TYPE_LABELS[visit.truck.truckType]}
                     </p>
-                    <p className="text-sm text-gray-600">Цель: {visit.purpose}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-slate-400">Цель: {visit.purpose}</p>
+                    <p className="text-sm text-slate-500">
                       Тайм-слот: {formatDateTime(visit.timeSlot)}
                     </p>
                     {visit.timeIn && (
-                      <p className="text-sm text-gray-500">Въезд: {formatDateTime(visit.timeIn)}</p>
+                      <p className="text-sm text-slate-500">Въезд: {formatDateTime(visit.timeIn)}</p>
                     )}
                     {visit.timeOut && (
-                      <p className="text-sm text-gray-500">Выезд: {formatDateTime(visit.timeOut)}</p>
+                      <p className="text-sm text-slate-500">Выезд: {formatDateTime(visit.timeOut)}</p>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 items-end">
@@ -354,15 +354,15 @@ export default function TrucksPage() {
       <Card title="Зарегистрированные автомобили">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {trucks.map((truck) => (
-            <div key={truck.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md">
+            <div key={truck.id} className="border border-slate-700 rounded-lg p-4 hover:shadow-md">
               <h4 className="font-bold text-lg">{truck.licensePlate}</h4>
-              <p className="text-sm text-gray-600">{TRUCK_TYPE_LABELS[truck.truckType]}</p>
-              <p className="text-sm text-gray-600">{truck.carrier}</p>
+              <p className="text-sm text-slate-400">{TRUCK_TYPE_LABELS[truck.truckType]}</p>
+              <p className="text-sm text-slate-400">{truck.carrier}</p>
               {truck.driverName && (
-                <p className="text-sm text-gray-500">Водитель: {truck.driverName}</p>
+                <p className="text-sm text-slate-500">Водитель: {truck.driverName}</p>
               )}
               {truck._count && (
-                <p className="text-xs text-gray-400 mt-2">Визитов: {truck._count.visits}</p>
+                <p className="text-xs text-slate-500 mt-2">Визитов: {truck._count.visits}</p>
               )}
             </div>
           ))}

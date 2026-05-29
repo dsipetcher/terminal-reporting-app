@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { vesselCallsApi, vesselsApi, berthsApi } from '../api';
 import type { VesselCall, Vessel, Berth } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -128,13 +128,13 @@ export default function VesselCallsPage() {
         <Card className="mb-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Судно *
               </label>
               <select
                 value={form.vesselId}
                 onChange={(e) => setForm({ ...form, vesselId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
                 required
               >
                 <option value="">Выберите судно</option>
@@ -147,51 +147,51 @@ export default function VesselCallsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Рейсовый номер *
               </label>
               <input
                 type="text"
                 value={form.voyageNumber}
                 onChange={(e) => setForm({ ...form, voyageNumber: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Планируемое прибытие (ETA) *
               </label>
               <input
                 type="datetime-local"
                 value={toDateTimeLocal(form.eta)}
                 onChange={(e) => setForm({ ...form, eta: fromDateTimeLocal(e.target.value) })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Планируемое убытие (ETD)
               </label>
               <input
                 type="datetime-local"
                 value={toDateTimeLocal(form.etd)}
                 onChange={(e) => setForm({ ...form, etd: fromDateTimeLocal(e.target.value) })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Причал
               </label>
               <select
                 value={form.berthId}
                 onChange={(e) => setForm({ ...form, berthId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
               >
                 <option value="">Не назначен</option>
                 {berths.filter(b => b.isActive).map((berth) => (
@@ -203,26 +203,26 @@ export default function VesselCallsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Агент
               </label>
               <input
                 type="text"
                 value={form.agent}
                 onChange={(e) => setForm({ ...form, agent: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Цель захода
               </label>
               <input
                 type="text"
                 value={form.purpose}
                 onChange={(e) => setForm({ ...form, purpose: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
                 placeholder="Например: Погрузка/выгрузка контейнеров"
               />
             </div>
@@ -237,7 +237,7 @@ export default function VesselCallsPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                className="px-6 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600 transition-colors"
               >
                 Отмена
               </button>
@@ -248,13 +248,13 @@ export default function VesselCallsPage() {
 
       {/* Фильтр по статусу */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="label-field">
           Фильтр по статусу:
         </label>
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="border border-slate-600 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
           <option value="ALL">Все статусы</option>
           {Object.entries(VESSEL_CALL_STATUS_LABELS).map(([value, label]) => (
@@ -267,19 +267,19 @@ export default function VesselCallsPage() {
       <div className="space-y-4">
         {filteredCalls.length === 0 ? (
           <Card>
-            <p className="text-center text-gray-500 py-8">Нет судозаходов</p>
+            <p className="text-center text-slate-500 py-8">Нет судозаходов</p>
           </Card>
         ) : (
           filteredCalls.map((call) => (
             <Card key={call.id} className="hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">{call.vessel.name}</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-xl font-bold text-slate-100">{call.vessel.name}</h3>
+                  <p className="text-sm text-slate-400">
                     IMO: {call.vessel.imoNumber} | Тип: {VESSEL_TYPE_LABELS[call.vessel.vesselType]} | Рейс: {call.voyageNumber}
                   </p>
                   {call.agent && (
-                    <p className="text-sm text-gray-600">Агент: {call.agent}</p>
+                    <p className="text-sm text-slate-400">Агент: {call.agent}</p>
                   )}
                 </div>
                 <StatusBadge 
@@ -290,24 +290,24 @@ export default function VesselCallsPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <p className="text-xs text-gray-500">Планируемое прибытие</p>
+                  <p className="text-xs text-slate-500">Планируемое прибытие</p>
                   <p className="font-medium">{formatDateTime(call.eta)}</p>
                 </div>
                 {call.ata && (
                   <div>
-                    <p className="text-xs text-gray-500">Фактическое прибытие</p>
+                    <p className="text-xs text-slate-500">Фактическое прибытие</p>
                     <p className="font-medium">{formatDateTime(call.ata)}</p>
                   </div>
                 )}
                 {call.berth && (
                   <div>
-                    <p className="text-xs text-gray-500">Причал</p>
+                    <p className="text-xs text-slate-500">Причал</p>
                     <p className="font-medium">№{call.berth.number} {call.berth.name}</p>
                   </div>
                 )}
                 {call._count && (
                   <div>
-                    <p className="text-xs text-gray-500">Контейнеров</p>
+                    <p className="text-xs text-slate-500">Контейнеров</p>
                     <p className="font-medium">{call._count.containers}</p>
                   </div>
                 )}

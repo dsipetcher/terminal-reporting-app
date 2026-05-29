@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { wagonsApi, warehousesApi, containersApi } from '../api';
 import type { Wagon, Warehouse, Container } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -134,26 +134,26 @@ export default function WagonsPage() {
         <Card className="mb-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Номер вагона *
               </label>
               <input
                 type="text"
                 value={form.number}
                 onChange={(e) => setForm({ ...form, number: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Тип вагона *
               </label>
               <select
                 value={form.wagonType}
                 onChange={(e) => setForm({ ...form, wagonType: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               >
                 {Object.entries(WAGON_TYPE_LABELS).map(([value, label]) => (
@@ -163,19 +163,19 @@ export default function WagonsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Груз
               </label>
               <input
                 type="text"
                 value={form.cargo}
                 onChange={(e) => setForm({ ...form, cargo: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Вес груза (тонн)
               </label>
               <input
@@ -183,55 +183,55 @@ export default function WagonsPage() {
                 step="0.1"
                 value={form.cargoWeight}
                 onChange={(e) => setForm({ ...form, cargoWeight: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Номер поезда
               </label>
               <input
                 type="text"
                 value={form.trainNumber}
                 onChange={(e) => setForm({ ...form, trainNumber: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Путь
               </label>
               <input
                 type="text"
                 value={form.track}
                 onChange={(e) => setForm({ ...form, track: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Дата прибытия *
               </label>
               <input
                 type="datetime-local"
                 value={toDateTimeLocal(form.arrivalAt)}
                 onChange={(e) => setForm({ ...form, arrivalAt: fromDateTimeLocal(e.target.value) })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Склад
               </label>
               <select
                 value={form.warehouseId}
                 onChange={(e) => setForm({ ...form, warehouseId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               >
                 <option value="">Не выбран</option>
                 {warehouses.map((w) => (
@@ -243,13 +243,13 @@ export default function WagonsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Контейнер
               </label>
               <select
                 value={form.containerId}
                 onChange={(e) => setForm({ ...form, containerId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               >
                 <option value="">Не выбран</option>
                 {containers.map((c) => (
@@ -274,13 +274,13 @@ export default function WagonsPage() {
 
       {/* Фильтр по статусу */}
       <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="label-field">
           Фильтр по статусу:
         </label>
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="border border-gray-300 rounded-lg px-4 py-2"
+          className="border border-slate-600 rounded-lg px-4 py-2"
         >
           <option value="ALL">Все статусы</option>
           {Object.entries(WAGON_STATUS_LABELS).map(([value, label]) => (
@@ -293,19 +293,19 @@ export default function WagonsPage() {
       <div className="space-y-4">
         {filteredWagons.length === 0 ? (
           <Card>
-            <p className="text-center text-gray-500 py-8">Нет вагонов</p>
+            <p className="text-center text-slate-500 py-8">Нет вагонов</p>
           </Card>
         ) : (
           filteredWagons.map((wagon) => (
             <Card key={wagon.id} className="hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900">Вагон №{wagon.number}</h3>
-                  <p className="text-sm text-gray-600">
+                  <h3 className="text-xl font-bold text-slate-100">Вагон №{wagon.number}</h3>
+                  <p className="text-sm text-slate-400">
                     Тип: {WAGON_TYPE_LABELS[wagon.wagonType]}
                   </p>
                   {wagon.trainNumber && (
-                    <p className="text-sm text-gray-600">Поезд: {wagon.trainNumber}</p>
+                    <p className="text-sm text-slate-400">Поезд: {wagon.trainNumber}</p>
                   )}
                 </div>
                 <StatusBadge
@@ -316,36 +316,36 @@ export default function WagonsPage() {
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <p className="text-xs text-gray-500">Прибытие</p>
+                  <p className="text-xs text-slate-500">Прибытие</p>
                   <p className="font-medium">{formatDateTime(wagon.arrivalAt)}</p>
                 </div>
                 {wagon.cargo && (
                   <div>
-                    <p className="text-xs text-gray-500">Груз</p>
+                    <p className="text-xs text-slate-500">Груз</p>
                     <p className="font-medium">{wagon.cargo}</p>
                   </div>
                 )}
                 {wagon.cargoWeight && (
                   <div>
-                    <p className="text-xs text-gray-500">Вес груза</p>
+                    <p className="text-xs text-slate-500">Вес груза</p>
                     <p className="font-medium">{wagon.cargoWeight} т</p>
                   </div>
                 )}
                 {wagon.track && (
                   <div>
-                    <p className="text-xs text-gray-500">Путь</p>
+                    <p className="text-xs text-slate-500">Путь</p>
                     <p className="font-medium">{wagon.track}</p>
                   </div>
                 )}
                 {wagon.warehouse && (
                   <div>
-                    <p className="text-xs text-gray-500">Склад</p>
+                    <p className="text-xs text-slate-500">Склад</p>
                     <p className="font-medium">{wagon.warehouse.number}</p>
                   </div>
                 )}
                 {wagon.container && (
                   <div>
-                    <p className="text-xs text-gray-500">Контейнер</p>
+                    <p className="text-xs text-slate-500">Контейнер</p>
                     <p className="font-medium">{wagon.container.containerNumber}</p>
                   </div>
                 )}

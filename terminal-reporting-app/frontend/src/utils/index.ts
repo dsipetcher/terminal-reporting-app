@@ -136,23 +136,23 @@ export const TRUCK_VISIT_STATUS_LABELS: Record<string, string> = {
 
 // Цвета для статусов
 export const STATUS_COLORS: Record<string, string> = {
-  EXPECTED: 'bg-blue-100 text-blue-800',
-  ARRIVED: 'bg-yellow-100 text-yellow-800',
-  BERTHED: 'bg-purple-100 text-purple-800',
-  IN_OPERATION: 'bg-orange-100 text-orange-800',
-  UNLOADING: 'bg-orange-100 text-orange-800',
-  LOADING: 'bg-orange-100 text-orange-800',
-  DEPARTED: 'bg-gray-100 text-gray-800',
-  CANCELLED: 'bg-red-100 text-red-800',
-  
-  EMPTY: 'bg-gray-100 text-gray-600',
-  FULL: 'bg-green-100 text-green-800',
-  ON_VESSEL: 'bg-blue-100 text-blue-800',
-  IN_TERMINAL: 'bg-purple-100 text-purple-800',
-  ON_DELIVERY: 'bg-yellow-100 text-yellow-800',
-  DELIVERED: 'bg-green-100 text-green-800',
-  
-  SCHEDULED: 'bg-blue-100 text-blue-800',
-  IN_PROGRESS: 'bg-orange-100 text-orange-800',
-  COMPLETED: 'bg-green-100 text-green-800',
+  EXPECTED: 'bg-blue-900/60 text-blue-300',
+  ARRIVED: 'bg-yellow-900/60 text-yellow-300',
+  BERTHED: 'bg-purple-900/60 text-purple-300',
+  IN_OPERATION: 'bg-orange-900/60 text-orange-300',
+  UNLOADING: 'bg-orange-900/60 text-orange-300',
+  LOADING: 'bg-orange-900/60 text-orange-300',
+  DEPARTED: 'bg-slate-700 text-slate-300',
+  CANCELLED: 'bg-red-900/60 text-red-300',
+
+  EMPTY: 'bg-slate-700 text-slate-400',
+  FULL: 'bg-green-900/60 text-green-300',
+  ON_VESSEL: 'bg-blue-900/60 text-blue-300',
+  IN_TERMINAL: 'bg-purple-900/60 text-purple-300',
+  ON_DELIVERY: 'bg-yellow-900/60 text-yellow-300',
+  DELIVERED: 'bg-green-900/60 text-green-300',
+
+  SCHEDULED: 'bg-blue-900/60 text-blue-300',
+  IN_PROGRESS: 'bg-orange-900/60 text-orange-300',
+  COMPLETED: 'bg-green-900/60 text-green-300',
 };

@@ -1,68 +1,59 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+@layer base {
+  html {
+    height: 100%;
+    color-scheme: dark;
   }
-  a:hover {
-    color: #747bff;
+
+  body {
+    @apply min-h-full antialiased bg-gray-50 text-gray-900;
+    margin: 0;
+    overflow-x: hidden;
   }
-  button {
-    background-color: #f9f9f9;
+
+  html.dark body {
+    @apply bg-slate-950 text-slate-100;
+  }
+
+  #root {
+    @apply min-h-full;
+  }
+
+  input,
+  select,
+  textarea {
+    @apply bg-white text-gray-900 border-gray-300;
+  }
+
+  html.dark input,
+  html.dark select,
+  html.dark textarea {
+    @apply bg-slate-900 text-slate-100 border-slate-600;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    @apply text-slate-500;
+  }
+}
+
+@layer components {
+  .input-field {
+    @apply w-full border border-gray-300 bg-white text-gray-900 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder:text-gray-400;
+  }
+
+  html.dark .input-field {
+    @apply border-slate-600 bg-slate-900 text-slate-100 placeholder:text-slate-500;
+  }
+
+  .label-field {
+    @apply block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2;
+  }
+
+  .stat-value {
+    @apply font-semibold text-gray-900 dark:text-slate-100;
   }
 }

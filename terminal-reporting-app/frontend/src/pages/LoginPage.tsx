@@ -29,43 +29,43 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-8">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <Ship className="w-8 h-8 text-blue-600" />
+          <Ship className="w-8 h-8 text-blue-400" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">TOS</h1>
-            <p className="text-sm text-gray-500">Система управления терминалом</p>
+            <h1 className="text-2xl font-bold text-slate-100">TOS</h1>
+            <p className="text-sm text-slate-400">Система управления терминалом</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Логин</label>
+            <label className="label-field">Логин</label>
             <input
               type="text"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="input-field"
               autoComplete="username"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+            <label className="label-field">Пароль</label>
             <input
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="input-field"
               autoComplete="current-password"
               required
             />
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            <div className="text-sm text-red-300 bg-red-950/50 border border-red-800 rounded-lg px-4 py-3">
               {error}
             </div>
           )}
@@ -73,14 +73,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-2.5 rounded-lg hover:bg-blue-500 disabled:opacity-60 transition-colors"
           >
             <LogIn className="w-4 h-4" />
             {loading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
-        <p className="mt-6 text-xs text-gray-500 text-center">
+        <p className="mt-6 text-xs text-slate-500 text-center">
           По умолчанию: admin / admin
         </p>
       </div>

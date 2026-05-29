@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { berthsApi } from '../api';
 import type { Berth } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -88,38 +88,38 @@ export default function BerthsPage() {
         <Card className="mb-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Номер причала *
               </label>
               <input
                 type="text"
                 value={form.number}
                 onChange={(e) => setForm({ ...form, number: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Название
               </label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Тип причала *
               </label>
               <select
                 value={form.berthType}
                 onChange={(e) => setForm({ ...form, berthType: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               >
                 {Object.entries(BERTH_TYPE_LABELS).map(([value, label]) => (
@@ -129,7 +129,7 @@ export default function BerthsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Длина (м) *
               </label>
               <input
@@ -137,13 +137,13 @@ export default function BerthsPage() {
                 step="0.1"
                 value={form.length}
                 onChange={(e) => setForm({ ...form, length: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Глубина (м) *
               </label>
               <input
@@ -151,13 +151,13 @@ export default function BerthsPage() {
                 step="0.1"
                 value={form.depth}
                 onChange={(e) => setForm({ ...form, depth: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Макс. дедвейт (тонн)
               </label>
               <input
@@ -165,7 +165,7 @@ export default function BerthsPage() {
                 step="100"
                 value={form.maxDeadweight}
                 onChange={(e) => setForm({ ...form, maxDeadweight: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
@@ -186,9 +186,9 @@ export default function BerthsPage() {
           <Card key={berth.id} className="hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">№{berth.number}</h3>
+                <h3 className="text-2xl font-bold text-slate-100">№{berth.number}</h3>
                 {berth.name && (
-                  <p className="text-sm text-gray-600">{berth.name}</p>
+                  <p className="text-sm text-slate-400">{berth.name}</p>
                 )}
               </div>
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -200,26 +200,26 @@ export default function BerthsPage() {
 
             <div className="space-y-2">
               <p className="text-sm">
-                <span className="text-gray-500">Тип:</span> {BERTH_TYPE_LABELS[berth.berthType]}
+                <span className="text-slate-500">Тип:</span> {BERTH_TYPE_LABELS[berth.berthType]}
               </p>
               <p className="text-sm">
-                <span className="text-gray-500">Длина:</span> {berth.length} м
+                <span className="text-slate-500">Длина:</span> {berth.length} м
               </p>
               <p className="text-sm">
-                <span className="text-gray-500">Глубина:</span> {berth.depth} м
+                <span className="text-slate-500">Глубина:</span> {berth.depth} м
               </p>
               {berth.maxDeadweight && (
                 <p className="text-sm">
-                  <span className="text-gray-500">Макс. дедвейт:</span> {berth.maxDeadweight} т
+                  <span className="text-slate-500">Макс. дедвейт:</span> {berth.maxDeadweight} т
                 </p>
               )}
             </div>
 
             {berth.vesselCalls && berth.vesselCalls.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <p className="text-sm font-medium text-gray-700 mb-2">Текущие суда:</p>
+              <div className="mt-4 pt-4 border-t border-slate-700">
+                <p className="text-sm font-medium text-slate-300 mb-2">Текущие суда:</p>
                 {berth.vesselCalls.map((vc) => (
-                  <p key={vc.id} className="text-sm text-gray-600">
+                  <p key={vc.id} className="text-sm text-slate-400">
                     🚢 {vc.vessel.name}
                   </p>
                 ))}

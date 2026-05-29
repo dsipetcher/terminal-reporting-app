@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { containersApi, warehousesApi, vesselCallsApi } from '../api';
 import type { Container, Warehouse, VesselCall } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -128,14 +128,14 @@ export default function ContainersPage() {
         <Card className="mb-6">
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Номер контейнера * (11 символов)
               </label>
               <input
                 type="text"
                 value={form.containerNumber}
                 onChange={(e) => setForm({ ...form, containerNumber: e.target.value.toUpperCase() })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 placeholder="MSCU1234567"
                 maxLength={11}
                 required
@@ -143,13 +143,13 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Тип контейнера *
               </label>
               <select
                 value={form.containerType}
                 onChange={(e) => setForm({ ...form, containerType: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               >
                 {Object.entries(CONTAINER_TYPE_LABELS).map(([value, label]) => (
@@ -159,13 +159,13 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Статус *
               </label>
               <select
                 value={form.status}
                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 required
               >
                 {Object.entries(CONTAINER_STATUS_LABELS).map(([value, label]) => (
@@ -175,7 +175,7 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Вес брутто (тонн)
               </label>
               <input
@@ -183,18 +183,18 @@ export default function ContainersPage() {
                 step="0.1"
                 value={form.grossWeight}
                 onChange={(e) => setForm({ ...form, grossWeight: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Судозаход
               </label>
               <select
                 value={form.vesselCallId}
                 onChange={(e) => setForm({ ...form, vesselCallId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               >
                 <option value="">Не выбран</option>
                 {vesselCalls.map((vc) => (
@@ -206,13 +206,13 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Склад
               </label>
               <select
                 value={form.warehouseId}
                 onChange={(e) => setForm({ ...form, warehouseId: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               >
                 <option value="">Не выбран</option>
                 {warehouses.map((w) => (
@@ -224,27 +224,27 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Местоположение (блок-ряд-ярус)
               </label>
               <input
                 type="text"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
                 placeholder="A-12-3"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Описание груза
               </label>
               <input
                 type="text"
                 value={form.cargoDescription}
                 onChange={(e) => setForm({ ...form, cargoDescription: e.target.value })}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                className="input-field"
               />
             </div>
 
@@ -263,7 +263,7 @@ export default function ContainersPage() {
       {/* Поиск и фильтр */}
       <div className="mb-6 flex flex-col md:flex-row gap-4">
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="label-field">
             Поиск по номеру:
           </label>
           <div className="flex gap-2">
@@ -272,7 +272,7 @@ export default function ContainersPage() {
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value.toUpperCase())}
               placeholder="MSCU1234567"
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2"
+              className="flex-1 border border-slate-600 rounded-lg px-4 py-2"
               maxLength={11}
             />
             <button
@@ -283,7 +283,7 @@ export default function ContainersPage() {
             </button>
             <button
               onClick={() => { setSearchNumber(''); loadData(); }}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              className="px-4 py-2 bg-slate-700 text-slate-200 rounded-lg hover:bg-slate-600"
             >
               Сбросить
             </button>
@@ -291,13 +291,13 @@ export default function ContainersPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="label-field">
             Фильтр по статусу:
           </label>
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="border border-gray-300 rounded-lg px-4 py-2"
+            className="border border-slate-600 rounded-lg px-4 py-2"
           >
             <option value="ALL">Все статусы</option>
             {Object.entries(CONTAINER_STATUS_LABELS).map(([value, label]) => (
@@ -311,15 +311,15 @@ export default function ContainersPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredContainers.length === 0 ? (
           <Card className="md:col-span-2 lg:col-span-3">
-            <p className="text-center text-gray-500 py-8">Нет контейнеров</p>
+            <p className="text-center text-slate-500 py-8">Нет контейнеров</p>
           </Card>
         ) : (
           filteredContainers.map((container) => (
             <Card key={container.id} className="hover:shadow-lg transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900">{container.containerNumber}</h3>
-                  <p className="text-sm text-gray-600">{CONTAINER_TYPE_LABELS[container.containerType]}</p>
+                  <h3 className="text-lg font-bold text-slate-100">{container.containerNumber}</h3>
+                  <p className="text-sm text-slate-400">{CONTAINER_TYPE_LABELS[container.containerType]}</p>
                 </div>
                 <StatusBadge 
                   status={container.status} 
@@ -330,27 +330,27 @@ export default function ContainersPage() {
               <div className="space-y-2">
                 {container.grossWeight && (
                   <p className="text-sm">
-                    <span className="text-gray-500">Вес:</span> {container.grossWeight} т
+                    <span className="text-slate-500">Вес:</span> {container.grossWeight} т
                   </p>
                 )}
                 {container.cargoDescription && (
                   <p className="text-sm">
-                    <span className="text-gray-500">Груз:</span> {container.cargoDescription}
+                    <span className="text-slate-500">Груз:</span> {container.cargoDescription}
                   </p>
                 )}
                 {container.warehouse && (
                   <p className="text-sm">
-                    <span className="text-gray-500">Склад:</span> {container.warehouse.number}
+                    <span className="text-slate-500">Склад:</span> {container.warehouse.number}
                   </p>
                 )}
                 {container.location && (
                   <p className="text-sm">
-                    <span className="text-gray-500">Место:</span> {container.location}
+                    <span className="text-slate-500">Место:</span> {container.location}
                   </p>
                 )}
                 {container.vesselCall && (
                   <p className="text-sm">
-                    <span className="text-gray-500">Судно:</span> {container.vesselCall.vessel.name}
+                    <span className="text-slate-500">Судно:</span> {container.vesselCall.vessel.name}
                   </p>
                 )}
               </div>

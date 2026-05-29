@@ -92,7 +92,7 @@ export default function WarehousesPage() {
         <Card className="mb-6">
           <form onSubmit={handleAddWarehouse} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Номер склада *
               </label>
               <input
@@ -100,13 +100,13 @@ export default function WarehousesPage() {
                 placeholder="Номер склада"
                 value={number}
                 onChange={(e) => setNumber(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Название
               </label>
               <input
@@ -114,12 +114,12 @@ export default function WarehousesPage() {
                 placeholder="Название (опционально)"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Вместимость (тонн) *
               </label>
               <input
@@ -128,19 +128,19 @@ export default function WarehousesPage() {
                 placeholder="Вместимость"
                 value={capacity || ''}
                 onChange={(e) => setCapacity(parseFloat(e.target.value) || 0)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="label-field">
                 Тип склада *
               </label>
               <select
                 value={warehouseType}
                 onChange={(e) => setWarehouseType(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field"
               >
                 {Object.entries(WAREHOUSE_TYPE_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -163,7 +163,7 @@ export default function WarehousesPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {warehouses.length === 0 ? (
           <Card className="md:col-span-2 lg:col-span-3">
-            <p className="text-center text-gray-500 py-8">Нет данных</p>
+            <p className="text-center text-slate-500 py-8">Нет данных</p>
           </Card>
         ) : (
           warehouses.map((w) => {
@@ -174,11 +174,11 @@ export default function WarehousesPage() {
               <Card key={w.id} className="hover:shadow-lg transition-shadow">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900">№{w.number}</h3>
+                    <h3 className="text-2xl font-bold text-slate-100">№{w.number}</h3>
                     {w.name && (
-                      <p className="text-sm text-gray-600">{w.name}</p>
+                      <p className="text-sm text-slate-400">{w.name}</p>
                     )}
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-slate-500 mt-1">
                       {WAREHOUSE_TYPE_LABELS[w.warehouseType]}
                     </p>
                   </div>
@@ -187,10 +187,10 @@ export default function WarehousesPage() {
                 <div className="space-y-3">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">Заполненность</span>
-                      <span className="font-medium">{loadPercentage.toFixed(1)}%</span>
+                      <span className="text-slate-400">Заполненность</span>
+                      <span className="font-medium text-slate-100">{loadPercentage.toFixed(1)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-slate-700 rounded-full h-2">
                       <div 
                         className={`h-2 rounded-full transition-all ${
                           loadPercentage > 90 ? 'bg-red-500' :
@@ -204,28 +204,28 @@ export default function WarehousesPage() {
 
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-500">Вместимость</p>
-                      <p className="font-semibold">{w.capacity.toFixed(1)} т</p>
+                      <p className="text-slate-500">Вместимость</p>
+                      <p className="stat-value">{w.capacity.toFixed(1)} т</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Загружено</p>
-                      <p className="font-semibold">{(w.load || 0).toFixed(1)} т</p>
+                      <p className="text-slate-500">Загружено</p>
+                      <p className="stat-value">{(w.load || 0).toFixed(1)} т</p>
                     </div>
                     <div className="col-span-2">
-                      <p className="text-gray-500">Свободно</p>
-                      <p className="font-semibold text-green-600">{freeSpace.toFixed(1)} т</p>
+                      <p className="text-slate-500">Свободно</p>
+                      <p className="font-semibold text-green-400">{freeSpace.toFixed(1)} т</p>
                     </div>
                   </div>
 
                   {w._count && (
-                    <div className="pt-3 border-t border-gray-200">
+                    <div className="pt-3 border-t border-slate-700">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Вагонов:</span>
-                        <span className="font-medium">{w._count.wagons}</span>
+                        <span className="text-slate-400">Вагонов:</span>
+                        <span className="font-medium text-slate-100">{w._count.wagons}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Контейнеров:</span>
-                        <span className="font-medium">{w._count.containers}</span>
+                        <span className="text-slate-400">Контейнеров:</span>
+                        <span className="font-medium text-slate-100">{w._count.containers}</span>
                       </div>
                     </div>
                   )}

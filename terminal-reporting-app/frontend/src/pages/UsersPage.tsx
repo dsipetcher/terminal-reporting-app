@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { UserPlus, Trash2 } from 'lucide-react';
 import { authApi } from '../api';
 import { useAuth } from '../context/AuthContext';
@@ -99,7 +99,7 @@ export default function UsersPage() {
               placeholder="Логин"
               value={form.username}
               onChange={(event) => setForm({ ...form, username: event.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
+              className="input-field"
               required
             />
             <input
@@ -107,13 +107,13 @@ export default function UsersPage() {
               placeholder="Пароль"
               value={form.password}
               onChange={(event) => setForm({ ...form, password: event.target.value })}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
+              className="input-field"
               required
             />
             <select
               value={form.role}
               onChange={(event) => setForm({ ...form, role: event.target.value as UserRole })}
-              className="px-4 py-2 border border-gray-300 rounded-lg"
+              className="input-field"
             >
               <option value="USER">Пользователь</option>
               <option value="ADMIN">Администратор</option>
@@ -130,32 +130,32 @@ export default function UsersPage() {
 
       <Card>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-700">
+            <thead className="bg-slate-800/50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Логин</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Роль</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Создан</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Действия</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Логин</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Роль</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Создан</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Действия</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.username}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">{user.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-slate-100">{user.username}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-slate-300">
                     {ROLE_LABELS[user.role]}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                     {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     {currentUser?.id !== user.id && (
                       <button
                         onClick={() => handleDelete(user.id)}
-                        className="inline-flex items-center gap-1 text-red-600 hover:text-red-800"
+                        className="inline-flex items-center gap-1 text-red-400 hover:text-red-800"
                       >
                         <Trash2 className="w-4 h-4" />
                         Удалить

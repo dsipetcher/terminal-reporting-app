@@ -7,7 +7,7 @@ interface StatusBadgeProps {
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, label }) => {
-  const colorClass = STATUS_COLORS[status] || 'bg-gray-100 text-gray-800';
+  const colorClass = STATUS_COLORS[status] || 'bg-slate-700 text-slate-300';
   
   return (
     <span className={`px-3 py-1 rounded-full text-sm font-medium ${colorClass}`}>

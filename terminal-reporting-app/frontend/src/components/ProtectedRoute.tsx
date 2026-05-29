@@ -7,7 +7,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <LoadingSpinner text="Проверка авторизации..." />
       </div>
     );
@@ -25,7 +25,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-slate-950">
         <LoadingSpinner text="Проверка доступа..." />
       </div>
     );
