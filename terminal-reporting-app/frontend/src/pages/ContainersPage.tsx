@@ -7,16 +7,20 @@ import { StatusBadge } from '../components/StatusBadge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { EntityActions } from '../components/EntityActions';
 import {
-  CONTAINER_TYPE_LABELS,
-  CONTAINER_STATUS_LABELS,
+  CARGO_GRADE_LABELS,
+  CARGO_CATEGORY_LABELS,
+  CARGO_BATCH_STATUS_LABELS,
   CUSTOMS_STATUS_LABELS,
-  validateContainerNumber,
+  validateBatchNumber,
 } from '../utils';
 
 const emptyForm = {
   containerNumber: '',
-  containerType: 'FORTY_HC',
-  status: 'IN_TERMINAL',
+  containerType: 'COAL_ANTHRACITE',
+  cargoCategory: 'COAL',
+  supplierName: '',
+  quantityTons: '',
+  status: 'IN_STORAGE',
   cargoDescription: '',
   grossWeight: '',
   sealNumber: '',
@@ -75,6 +79,9 @@ export default function ContainersPage() {
     setForm({
       containerNumber: container.containerNumber,
       containerType: container.containerType,
+      cargoCategory: container.cargoCategory ?? 'COAL',
+      supplierName: container.supplierName ?? '',
+      quantityTons: container.quantityTons?.toString() ?? '',
       status: container.status,
       cargoDescription: container.cargoDescription ?? '',
       grossWeight: container.grossWeight?.toString() ?? '',
@@ -93,6 +100,10 @@ export default function ContainersPage() {
   const buildPayload = () => ({
     containerNumber: form.containerNumber.toUpperCase(),
     containerType: form.containerType as Container['containerType'],
+    cargoCategory: form.cargoCategory as Container['cargoCategory'],
+    supplierName: form.supplierName || undefined,
+    quantityTons: form.quantityTons ? parseFloat(form.quantityTons) : undefined,
+    quantityUnit: 'TON',
     status: form.status as Container['status'],
     cargoDescription: form.cargoDescription || undefined,
     grossWeight: form.grossWeight ? parseFloat(form.grossWeight) : undefined,
@@ -109,8 +120,8 @@ export default function ContainersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateContainerNumber(form.containerNumber)) {
-      alert('Неверный номер контейнера (ISO 6346). Проверьте формат и контрольную цифру.');
+    if (!validateBatchNumber(form.containerNumber)) {
+      alert('Неверный номер партии (например COAL-2026-0001).');
       return;
     }
 
@@ -124,19 +135,19 @@ export default function ContainersPage() {
       loadData();
     } catch (error) {
       console.error('Error saving container:', error);
-      alert(editingId ? 'Ошибка при обновлении контейнера' : 'Ошибка при создании контейнера');
+      alert(editingId ? 'Ошибка при обновлении партии' : 'Ошибка при создании партии');
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Удалить контейнер?')) return;
+    if (!confirm('Удалить партию груза?')) return;
 
     try {
       await containersApi.delete(id);
       loadData();
     } catch (error) {
       console.error('Error deleting container:', error);
-      alert('Не удалось удалить контейнер.');
+      alert('Не удалось удалить партию.');
     }
   };
 
@@ -163,7 +174,7 @@ export default function ContainersPage() {
       loadData();
     } catch (error) {
       console.error('Error moving container:', error);
-      alert('Ошибка при перемещении контейнера');
+      alert('Ошибка при перемещении партии');
     }
   };
 
@@ -177,7 +188,7 @@ export default function ContainersPage() {
       const container = await containersApi.getByNumber(searchNumber.toUpperCase());
       setContainers([container]);
     } catch {
-      alert('Контейнер не найден');
+      alert('Партия не найдена');
       loadData();
     }
   };
@@ -187,14 +198,14 @@ export default function ContainersPage() {
     : containers.filter(c => c.status === selectedStatus);
 
   if (loading) {
-    return <LoadingSpinner text="Загрузка контейнеров..." />;
+    return <LoadingSpinner text="Загрузка партий груза..." />;
   }
 
   return (
     <div>
       <PageHeader
-        title="Управление контейнерами"
-        subtitle={`Всего: ${containers.length} контейнеров`}
+        title="Партии груза (уголь / нефть)"
+        subtitle={`Учётные единицы ИЛС · всего: ${containers.length}`}
         action={
           <button
             onClick={() => {
@@ -203,41 +214,59 @@ export default function ContainersPage() {
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            {showForm ? 'Отменить' : '+ Новый контейнер'}
+            {showForm ? 'Отменить' : '+ Новая партия'}
           </button>
         }
       />
 
       {showForm && (
-        <Card className="mb-6" title={editingId ? 'Редактирование контейнера' : 'Новый контейнер'}>
+        <Card className="mb-6" title={editingId ? 'Редактирование партии' : 'Новая партия груза'}>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="label-field">Номер контейнера * (ISO 6346)</label>
+              <label className="label-field">Номер партии *</label>
               <input
                 type="text"
                 value={form.containerNumber}
                 onChange={(e) => setForm({ ...form, containerNumber: e.target.value.toUpperCase() })}
                 className="input-field"
-                placeholder="MSCU1234567"
-                maxLength={11}
+                placeholder="COAL-2026-0001"
                 required
                 disabled={!!editingId}
               />
             </div>
 
             <div>
-              <label className="label-field">Тип контейнера *</label>
-              <select value={form.containerType} onChange={(e) => setForm({ ...form, containerType: e.target.value })} className="input-field" required>
-                {Object.entries(CONTAINER_TYPE_LABELS).map(([value, label]) => (
+              <label className="label-field">Категория груза *</label>
+              <select value={form.cargoCategory} onChange={(e) => setForm({ ...form, cargoCategory: e.target.value })} className="input-field" required>
+                {Object.entries(CARGO_CATEGORY_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
             </div>
 
             <div>
+              <label className="label-field">Марка / сорт *</label>
+              <select value={form.containerType} onChange={(e) => setForm({ ...form, containerType: e.target.value })} className="input-field" required>
+                {Object.entries(CARGO_GRADE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="label-field">Поставщик (шахта / НПЗ)</label>
+              <input type="text" value={form.supplierName} onChange={(e) => setForm({ ...form, supplierName: e.target.value })} className="input-field" placeholder="АО «Кузбассуголь»" />
+            </div>
+
+            <div>
+              <label className="label-field">Объём, т</label>
+              <input type="number" step="0.1" value={form.quantityTons} onChange={(e) => setForm({ ...form, quantityTons: e.target.value })} className="input-field" />
+            </div>
+
+            <div>
               <label className="label-field">Статус *</label>
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="input-field" required>
-                {Object.entries(CONTAINER_STATUS_LABELS).map(([value, label]) => (
+                {Object.entries(CARGO_BATCH_STATUS_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
@@ -249,12 +278,7 @@ export default function ContainersPage() {
             </div>
 
             <div>
-              <label className="label-field">Номер пломбы</label>
-              <input type="text" value={form.sealNumber} onChange={(e) => setForm({ ...form, sealNumber: e.target.value })} className="input-field" />
-            </div>
-
-            <div>
-              <label className="label-field">Судозаход</label>
+              <label className="label-field">Судозаход (отгрузка на флот)</label>
               <select value={form.vesselCallId} onChange={(e) => setForm({ ...form, vesselCallId: e.target.value })} className="input-field">
                 <option value="">Не выбран</option>
                 {vesselCalls.map((vc) => (
@@ -310,7 +334,7 @@ export default function ContainersPage() {
 
             <div className="md:col-span-2 flex gap-4">
               <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                {editingId ? 'Сохранить' : 'Создать контейнер'}
+                {editingId ? 'Сохранить' : 'Создать партию'}
               </button>
               <button type="button" onClick={resetForm} className="px-6 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">
                 Отмена
@@ -328,9 +352,8 @@ export default function ContainersPage() {
               type="text"
               value={searchNumber}
               onChange={(e) => setSearchNumber(e.target.value.toUpperCase())}
-              placeholder="MSCU1234567"
+              placeholder="COAL-2026-0001"
               className="flex-1 border border-slate-600 rounded-lg px-4 py-2"
-              maxLength={11}
             />
             <button onClick={handleSearch} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Найти</button>
             <button onClick={() => { setSearchNumber(''); loadData(); }} className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-slate-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600">Сбросить</button>
@@ -345,7 +368,7 @@ export default function ContainersPage() {
             className="border border-slate-600 rounded-lg px-4 py-2"
           >
             <option value="ALL">Все статусы</option>
-            {Object.entries(CONTAINER_STATUS_LABELS).map(([value, label]) => (
+            {Object.entries(CARGO_BATCH_STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
             ))}
           </select>
@@ -355,7 +378,7 @@ export default function ContainersPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredContainers.length === 0 ? (
           <Card className="md:col-span-2 lg:col-span-3">
-            <p className="text-center text-subtle py-8">Нет контейнеров</p>
+            <p className="text-center text-subtle py-8">Нет партий груза</p>
           </Card>
         ) : (
           filteredContainers.map((container) => (
@@ -363,18 +386,22 @@ export default function ContainersPage() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-bold text-primary">{container.containerNumber}</h3>
-                  <p className="text-sm text-muted">{CONTAINER_TYPE_LABELS[container.containerType]}</p>
+                  <p className="text-sm text-muted">
+                    {CARGO_CATEGORY_LABELS[container.cargoCategory ?? 'COAL']} · {CARGO_GRADE_LABELS[container.containerType]}
+                  </p>
+                  {container.supplierName && <p className="text-xs text-subtle">{container.supplierName}</p>}
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <StatusBadge status={container.status} label={CONTAINER_STATUS_LABELS[container.status]} />
+                  <StatusBadge status={container.status} label={CARGO_BATCH_STATUS_LABELS[container.status]} />
                   <EntityActions onEdit={() => startEdit(container)} onDelete={() => handleDelete(container.id)} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                {container.grossWeight && <p className="text-sm"><span className="text-subtle">Вес:</span> {container.grossWeight} т</p>}
-                {container.cargoDescription && <p className="text-sm"><span className="text-subtle">Груз:</span> {container.cargoDescription}</p>}
-                {container.sealNumber && <p className="text-sm"><span className="text-subtle">Пломба:</span> {container.sealNumber}</p>}
+                {(container.quantityTons ?? container.grossWeight) && (
+                  <p className="text-sm"><span className="text-subtle">Объём:</span> {container.quantityTons ?? container.grossWeight} т</p>
+                )}
+                {container.cargoDescription && <p className="text-sm"><span className="text-subtle">Описание:</span> {container.cargoDescription}</p>}
                 {container.warehouse && <p className="text-sm"><span className="text-subtle">Склад:</span> {container.warehouse.number}</p>}
                 {container.location && <p className="text-sm"><span className="text-subtle">Место:</span> {container.location}</p>}
                 {container.vesselCall && <p className="text-sm"><span className="text-subtle">Судно:</span> {container.vesselCall.vessel.name}</p>}
@@ -386,7 +413,7 @@ export default function ContainersPage() {
 
               {movingId === container.id ? (
                 <form onSubmit={handleMove} className="mt-4 pt-4 border-t border-default space-y-3">
-                  <p className="text-sm font-medium">Перемещение контейнера</p>
+                  <p className="text-sm font-medium">Перемещение на склад / к причалу</p>
                   <select value={moveForm.warehouseId} onChange={(e) => setMoveForm({ ...moveForm, warehouseId: e.target.value })} className="input-field">
                     <option value="">Без склада</option>
                     {warehouses.map((w) => (
@@ -395,7 +422,7 @@ export default function ContainersPage() {
                   </select>
                   <input type="text" value={moveForm.location} onChange={(e) => setMoveForm({ ...moveForm, location: e.target.value })} className="input-field" placeholder="A-12-3" />
                   <select value={moveForm.status} onChange={(e) => setMoveForm({ ...moveForm, status: e.target.value })} className="input-field">
-                    {Object.entries(CONTAINER_STATUS_LABELS).map(([value, label]) => (
+                    {Object.entries(CARGO_BATCH_STATUS_LABELS).map(([value, label]) => (
                       <option key={value} value={value}>{label}</option>
                     ))}
                   </select>

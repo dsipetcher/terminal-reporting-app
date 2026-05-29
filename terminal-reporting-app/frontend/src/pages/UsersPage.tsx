@@ -7,10 +7,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
-const ROLE_LABELS: Record<UserRole, string> = {
-  ADMIN: 'Администратор',
-  USER: 'Пользователь',
-};
+import { USER_ROLE_LABELS } from '../utils';
 
 export default function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -131,6 +128,9 @@ export default function UsersPage() {
             <input type="password" placeholder="Пароль" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="input-field" required />
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })} className="input-field">
               <option value="USER">Пользователь</option>
+              <option value="PLANNER">Плановик</option>
+              <option value="DISPATCHER">Диспетчер</option>
+              <option value="WAREHOUSE">Кладовщик</option>
               <option value="ADMIN">Администратор</option>
             </select>
             <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">Сохранить</button>
@@ -144,6 +144,9 @@ export default function UsersPage() {
             <input type="password" placeholder="Новый пароль (оставьте пустым, чтобы не менять)" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className="input-field" />
             <select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value as UserRole })} className="input-field">
               <option value="USER">Пользователь</option>
+              <option value="PLANNER">Плановик</option>
+              <option value="DISPATCHER">Диспетчер</option>
+              <option value="WAREHOUSE">Кладовщик</option>
               <option value="ADMIN">Администратор</option>
             </select>
             <div className="flex gap-2">
@@ -171,7 +174,7 @@ export default function UsersPage() {
                 <tr key={user.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">{user.id}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">{user.username}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">{ROLE_LABELS[user.role]}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-secondary">{USER_ROLE_LABELS[user.role]}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-subtle">{new Date(user.createdAt).toLocaleDateString('ru-RU')}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex justify-end gap-3">

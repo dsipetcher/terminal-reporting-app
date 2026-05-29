@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Ship, LogIn } from 'lucide-react';
+import { Network, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -32,10 +32,10 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-8">
         <div className="flex items-center justify-center gap-3 mb-8">
-          <Ship className="w-8 h-8 text-blue-400" />
+          <Network className="w-8 h-8 text-blue-400" />
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">TOS</h1>
-            <p className="text-sm text-slate-400">Система управления терминалом</p>
+            <h1 className="text-2xl font-bold text-slate-100">ИЛС</h1>
+            <p className="text-sm text-slate-400">Информационная логистическая система</p>
           </div>
         </div>
 
@@ -80,8 +80,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-xs text-slate-500 text-center">
-          По умолчанию: admin / admin
+        <p className="mt-6 text-xs text-slate-500 text-center leading-relaxed">
+          Демо: admin / admin · Угольно-нефтяной терминал
+          <br />
+          Отслеживание партии: COAL-2026-0001
         </p>
       </div>
     </div>

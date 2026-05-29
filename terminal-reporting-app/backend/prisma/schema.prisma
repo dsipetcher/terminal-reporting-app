@@ -16,7 +16,7 @@ model Warehouse {
   number      String      @unique
   name        String?
   capacity    Float
-  warehouseType String    @default("OPEN_YARD") // OPEN_YARD, COVERED, REFRIGERATED, CUSTOMS, EMPTY_DEPOT
+  warehouseType String    @default("COAL_YARD") // COAL_YARD, OIL_TANK, COVERED, OPEN_YARD
   zone        String?
   
   wagons      Wagon[]
@@ -97,7 +97,8 @@ model VesselCall {
   agent         String?
   purpose       String?
   
-  containers    Container[]
+  containers      Container[]
+  logisticsOrders LogisticsOrder[]
   
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -125,15 +126,19 @@ model Berth {
 }
 
 // ============================================
-// КОНТЕЙНЕРЫ
+// ПАРТИИ ГРУЗА (уголь, нефть) — учётная единица ИЛС
 // ============================================
 
 model Container {
   id              Int             @id @default(autoincrement())
-  containerNumber String          @unique
-  containerType   String          // TWENTY_GP, TWENTY_HC, FORTY_GP, FORTY_HC, FORTY_FIVE_HC, TWENTY_RF, FORTY_RF, TWENTY_OT, FORTY_OT, TWENTY_FR, FORTY_FR, TWENTY_TK
+  containerNumber String          @unique // номер партии груза (batch)
+  containerType   String          // COAL_ANTHRACITE, COAL_COKING, OIL_CRUDE, OIL_FUEL, PETROLEUM
   
-  status          String          // EMPTY, FULL, ON_VESSEL, IN_TERMINAL, ON_DELIVERY, DELIVERED
+  status          String          // ON_LAND, IN_STORAGE, LOADING_BERTH, ON_VESSEL, AT_DESTINATION_PORT, DELIVERED
+  cargoCategory   String          @default("COAL") // COAL, OIL, PETROLEUM
+  supplierName    String?
+  quantityTons    Float?
+  quantityUnit    String          @default("TON")
   
   cargoDescription String?
   grossWeight     Float?
@@ -149,12 +154,17 @@ model Container {
   
   wagons          Wagon[]
   truckVisits     TruckVisit[]
+  materialFlows   MaterialFlow[]
   
   portOfLoading   String?
   portOfDischarge String?
   blNumber        String?         // Bill of Lading number
   
   customsStatus   String?
+
+  logisticsOrder   LogisticsOrder? @relation(fields: [logisticsOrderId], references: [id])
+  logisticsOrderId Int?
+  routeTrackings   CargoTracking[]
   
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -204,10 +214,178 @@ model TruckVisit {
 // ============================================
 
 model User {
-  id           Int      @id @default(autoincrement())
-  username     String   @unique
+  id           Int             @id @default(autoincrement())
+  username     String          @unique
   passwordHash String
-  role         String   @default("USER") // ADMIN, USER
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  fullName     String?
+  department   String?
+  role         String          @default("USER") // ADMIN, PLANNER, DISPATCHER, WAREHOUSE, USER
+  infoEvents   InfoFlowEvent[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+}
+
+// ============================================
+// ИЛС: ОБЕСПЕЧИВАЮЩАЯ ПОДСИСТЕМА (справочники)
+// ============================================
+
+model Counterparty {
+  id          Int              @id @default(autoincrement())
+  code        String           @unique
+  name        String
+  partnerType String           // CLIENT, CARRIER, AGENT, CUSTOMS, RAILWAY
+  inn         String?
+  contact     String?
+  orders      LogisticsOrder[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model PortDirectory {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  country   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CargoDirectory {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  category  String   // CONTAINERIZED, BULK, GENERAL, LIQUID, DANGEROUS
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// ИЛС: ФУНКЦИОНАЛЬНАЯ ПОДСИСТЕМА
+// ============================================
+
+model LogisticsOrder {
+  id               Int            @id @default(autoincrement())
+  orderNumber      String         @unique
+  orderType        String         // EXPORT_BULK, STORAGE, SHIP_LOADING
+  managementLevel  String         // PLANNING, DISPATCH, OPERATIONAL
+  status           String         @default("DRAFT") // DRAFT, PLANNED, IN_PROGRESS, COMPLETED, CANCELLED
+  counterparty     Counterparty?  @relation(fields: [counterpartyId], references: [id])
+  counterpartyId   Int?
+  cargoDescription String?
+  cargoWeight      Float?
+  origin           String?        // поставщик / регион
+  destination      String?        // порт назначения судна
+  supplierName     String?
+  plannedStart     DateTime?
+  plannedEnd       DateTime?
+  actualStart      DateTime?
+  actualEnd        DateTime?
+  vesselCall       VesselCall?    @relation(fields: [vesselCallId], references: [id])
+  vesselCallId     Int?
+  notes            String?
+  containers       Container[]
+  materialFlows    MaterialFlow[]
+  infoEvents       InfoFlowEvent[]
+  routes           LogisticsRoute[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+}
+
+// Логистический маршрут доставки груза
+model LogisticsRoute {
+  id            Int              @id @default(autoincrement())
+  routeNumber   String           @unique
+  name          String?
+  order         LogisticsOrder?  @relation(fields: [orderId], references: [id])
+  orderId       Int?
+  origin        String
+  destination   String           // порт назначения груза
+  routeKind     String           @default("EXPORT") // EXPORT: поставщик → суша → склад → судно → порт
+  status        String           @default("PLANNED") // PLANNED, ACTIVE, COMPLETED, CANCELLED
+  stages        RouteStage[]
+  trackings     CargoTracking[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+// Этап (точка) логистического маршрута
+model RouteStage {
+  id              Int              @id @default(autoincrement())
+  route           LogisticsRoute   @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  routeId         Int
+  sequence        Int
+  stageType       String           // SUPPLIER, RAIL_STATION, ROAD_GATE, WAREHOUSE, BERTH, SHIP, PORT
+  locationCode    String
+  locationName    String
+  transportMode   String?          // SEA, RAIL, ROAD, WAREHOUSE
+  plannedAt       DateTime?
+  actualAt        DateTime?
+  status          String           @default("PENDING") // PENDING, CURRENT, COMPLETED, SKIPPED
+  trackingsHere   CargoTracking[]  @relation("CurrentStage")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([routeId, sequence])
+}
+
+// Отслеживание партии груза на маршруте
+model CargoTracking {
+  id              Int                  @id @default(autoincrement())
+  container       Container            @relation(fields: [containerId], references: [id])
+  containerId     Int
+  route           LogisticsRoute       @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  routeId         Int
+  currentStage    RouteStage?          @relation("CurrentStage", fields: [currentStageId], references: [id])
+  currentStageId  Int?
+  status          String               @default("REGISTERED") // REGISTERED, IN_TRANSIT, AT_STAGE, DELIVERED, DELAYED
+  lastEventAt     DateTime             @default(now())
+  notes           String?
+  events          CargoTrackingEvent[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@unique([containerId, routeId])
+}
+
+// История перемещения груза по этапам маршрута
+model CargoTrackingEvent {
+  id           Int           @id @default(autoincrement())
+  tracking     CargoTracking @relation(fields: [trackingId], references: [id], onDelete: Cascade)
+  trackingId   Int
+  fromStageId  Int?
+  toStageId    Int?
+  eventAt      DateTime      @default(now())
+  description  String?
+  createdAt    DateTime      @default(now())
+}
+
+model MaterialFlow {
+  id            Int             @id @default(autoincrement())
+  order         LogisticsOrder? @relation(fields: [orderId], references: [id])
+  orderId       Int?
+  flowType      String          // ARRIVAL, DEPARTURE, INTERNAL_TRANSFER, STORAGE
+  transportMode String          // SEA, RAIL, ROAD, WAREHOUSE
+  quantity      Float?
+  unit          String?         // TON, M3
+  fromLocation  String?
+  toLocation    String?
+  container     Container?      @relation(fields: [containerId], references: [id])
+  containerId   Int?
+  performedAt   DateTime        @default(now())
+  description   String?
+  createdAt     DateTime        @default(now())
+}
+
+model InfoFlowEvent {
+  id          Int             @id @default(autoincrement())
+  ilsFunction String          // PLANNING, REGULATION, CONTROL, ANALYSIS, ACCOUNTING
+  eventType   String          // CREATE, UPDATE, STATUS_CHANGE, ALERT, REPORT
+  entityType  String
+  entityId    Int?
+  message     String
+  order       LogisticsOrder? @relation(fields: [orderId], references: [id])
+  orderId     Int?
+  user        User?           @relation(fields: [userId], references: [id])
+  userId      Int?
+  createdAt   DateTime        @default(now())
 }

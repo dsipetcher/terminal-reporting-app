@@ -15,6 +15,11 @@ import {
   LogOut,
   Moon,
   Sun,
+  ClipboardList,
+  Building2,
+  ArrowLeftRight,
+  Network,
+  MapPinned,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
@@ -30,6 +35,11 @@ import WagonsPage from './pages/WagonsPage';
 import WarehousesPage from './pages/WarehousesPage';
 import UsersPage from './pages/UsersPage';
 import LoginPage from './pages/LoginPage';
+import LogisticsOrdersPage from './pages/LogisticsOrdersPage';
+import CounterpartiesPage from './pages/CounterpartiesPage';
+import FlowsPage from './pages/FlowsPage';
+import CargoTrackingPage from './pages/CargoTrackingPage';
+import { USER_ROLE_LABELS } from './utils';
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -45,8 +55,8 @@ function AppLayout() {
       >
         <div className="flex items-center justify-between p-6 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <Ship className="w-6 h-6 text-blue-400" />
-            <h2 className="text-xl font-bold text-white">TOS</h2>
+            <Network className="w-6 h-6 text-blue-400" />
+            <h2 className="text-xl font-bold text-white">ИЛС</h2>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -63,11 +73,79 @@ function AppLayout() {
             onClick={() => setSidebarOpen(false)}
           >
             <LayoutDashboard className="w-5 h-5" />
-            <span className="font-medium">Dashboard</span>
+            <span className="font-medium">Панель ИЛС</span>
           </Link>
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Морской фронт
+            Управление заказами
+          </div>
+          <Link
+            to="/logistics-orders"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <ClipboardList className="w-5 h-5" />
+            <span className="font-medium">Логистические заказы</span>
+          </Link>
+          <Link
+            to="/cargo-tracking"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <MapPinned className="w-5 h-5" />
+            <span className="font-medium">Отслеживание грузов</span>
+          </Link>
+          <Link
+            to="/flows"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <ArrowLeftRight className="w-5 h-5" />
+            <span className="font-medium">Потоки</span>
+          </Link>
+
+          <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Сухопутный ввод (ЖД / авто)
+          </div>
+          <Link
+            to="/wagons"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Train className="w-5 h-5" />
+            <span className="font-medium">Железнодорожный фронт</span>
+          </Link>
+          <Link
+            to="/trucks"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Truck className="w-5 h-5" />
+            <span className="font-medium">Автотранспорт</span>
+          </Link>
+
+          <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Складской учёт
+          </div>
+          <Link
+            to="/warehouses"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Warehouse className="w-5 h-5" />
+            <span className="font-medium">Склады угля и нефти</span>
+          </Link>
+          <Link
+            to="/cargo-lots"
+            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <Package className="w-5 h-5" />
+            <span className="font-medium">Партии груза</span>
+          </Link>
+
+          <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Отгрузка на флот
           </div>
           <Link
             to="/vessels"
@@ -95,53 +173,21 @@ function AppLayout() {
           </Link>
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Грузы
+            Справочники ИЛС
           </div>
           <Link
-            to="/containers"
+            to="/counterparties"
             className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
             onClick={() => setSidebarOpen(false)}
           >
-            <Package className="w-5 h-5" />
-            <span className="font-medium">Контейнеры</span>
-          </Link>
-          <Link
-            to="/wagons"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Train className="w-5 h-5" />
-            <span className="font-medium">Вагоны</span>
-          </Link>
-
-          <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Транспорт
-          </div>
-          <Link
-            to="/trucks"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Truck className="w-5 h-5" />
-            <span className="font-medium">Автотранспорт</span>
-          </Link>
-
-          <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Инфраструктура
-          </div>
-          <Link
-            to="/warehouses"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Warehouse className="w-5 h-5" />
-            <span className="font-medium">Склады</span>
+            <Building2 className="w-5 h-5" />
+            <span className="font-medium">Контрагенты</span>
           </Link>
 
           {isAdmin && (
             <>
               <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                Администрирование
+                Обеспечивающая подсистема
               </div>
               <Link
                 to="/users"
@@ -156,7 +202,7 @@ function AppLayout() {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500 text-center">Terminal Operating System v1.0</p>
+          <p className="text-xs text-slate-500 text-center">Информационная логистическая система v2.0</p>
         </div>
       </aside>
 
@@ -171,7 +217,7 @@ function AppLayout() {
             </button>
 
             <div className="flex-1 md:flex-none">
-              <h1 className="text-xl font-semibold text-primary">Система управления терминалом</h1>
+              <h1 className="text-xl font-semibold text-primary">ИЛС · угольно-нефтяной терминал</h1>
             </div>
 
             <div className="flex items-center gap-4">
@@ -194,7 +240,7 @@ function AppLayout() {
                 <div className="text-right">
                   <p className="text-sm font-medium text-primary">{user?.username}</p>
                   <p className="text-xs text-subtle">
-                    {user?.role === 'ADMIN' ? 'Администратор' : 'Пользователь'}
+                    {user?.role ? USER_ROLE_LABELS[user.role] ?? user.role : ''}
                   </p>
                 </div>
                 <button
@@ -215,10 +261,15 @@ function AppLayout() {
             <Route path="/vessels" element={<VesselsPage />} />
             <Route path="/vessel-calls" element={<VesselCallsPage />} />
             <Route path="/berths" element={<BerthsPage />} />
-            <Route path="/containers" element={<ContainersPage />} />
+            <Route path="/containers" element={<Navigate to="/cargo-lots" replace />} />
+            <Route path="/cargo-lots" element={<ContainersPage />} />
             <Route path="/trucks" element={<TrucksPage />} />
             <Route path="/wagons" element={<WagonsPage />} />
             <Route path="/warehouses" element={<WarehousesPage />} />
+            <Route path="/logistics-orders" element={<LogisticsOrdersPage />} />
+            <Route path="/cargo-tracking" element={<CargoTrackingPage />} />
+            <Route path="/counterparties" element={<CounterpartiesPage />} />
+            <Route path="/flows" element={<FlowsPage />} />
             <Route
               path="/users"
               element={

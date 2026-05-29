@@ -9,6 +9,13 @@ import type {
   Warehouse,
   Wagon,
   DashboardStats,
+  LogisticsOrder,
+  Counterparty,
+  MaterialFlow,
+  InfoFlowEvent,
+  LogisticsRoute,
+  CargoTracking,
+  ContainerTrackingResult,
 } from '../types';
 import { API_BASE_URL, IS_DEMO_MODE } from './config';
 import {
@@ -22,6 +29,11 @@ import {
   demoVesselsApi,
   demoWagonsApi,
   demoWarehousesApi,
+  demoLogisticsOrdersApi,
+  demoCounterpartiesApi,
+  demoMaterialFlowsApi,
+  demoInfoFlowsApi,
+  demoLogisticsRoutesApi,
 } from './demoStore';
 import { getStoredToken } from './authStorage';
 import type { AuthResponse, CreateUserRequest, UpdateUserRequest, User } from '../types';
@@ -141,6 +153,67 @@ const realWagonsApi = {
   delete: (id: number) => api.delete(`/wagons/${id}`),
 };
 
+const realLogisticsOrdersApi = {
+  getAll: (params?: { status?: string; managementLevel?: string; orderType?: string }) =>
+    api.get<LogisticsOrder[]>('/logistics-orders', { params }).then((res) => res.data),
+  getById: (id: number) => api.get<LogisticsOrder>(`/logistics-orders/${id}`).then((res) => res.data),
+  create: (data: Partial<LogisticsOrder>) =>
+    api.post<LogisticsOrder>('/logistics-orders', data).then((res) => res.data),
+  update: (id: number, data: Partial<LogisticsOrder>) =>
+    api.put<LogisticsOrder>(`/logistics-orders/${id}`, data).then((res) => res.data),
+  updateStatus: (id: number, status: string) =>
+    api.patch<LogisticsOrder>(`/logistics-orders/${id}/status`, { status }).then((res) => res.data),
+  delete: (id: number) => api.delete(`/logistics-orders/${id}`),
+};
+
+const realCounterpartiesApi = {
+  getAll: (params?: { partnerType?: string }) =>
+    api.get<Counterparty[]>('/counterparties', { params }).then((res) => res.data),
+  create: (data: Partial<Counterparty>) =>
+    api.post<Counterparty>('/counterparties', data).then((res) => res.data),
+  update: (id: number, data: Partial<Counterparty>) =>
+    api.put<Counterparty>(`/counterparties/${id}`, data).then((res) => res.data),
+  delete: (id: number) => api.delete(`/counterparties/${id}`),
+};
+
+const realMaterialFlowsApi = {
+  getAll: (params?: { orderId?: number; transportMode?: string }) =>
+    api.get<MaterialFlow[]>('/material-flows', { params }).then((res) => res.data),
+  create: (data: Partial<MaterialFlow>) =>
+    api.post<MaterialFlow>('/material-flows', data).then((res) => res.data),
+};
+
+const realInfoFlowsApi = {
+  getAll: (params?: { ilsFunction?: string; orderId?: number; limit?: number }) =>
+    api.get<InfoFlowEvent[]>('/info-flows', { params }).then((res) => res.data),
+};
+
+const realLogisticsRoutesApi = {
+  getAll: (params?: { status?: string; orderId?: number }) =>
+    api.get<LogisticsRoute[]>('/logistics-routes', { params }).then((res) => res.data),
+  getById: (id: number) =>
+    api.get<LogisticsRoute>(`/logistics-routes/${id}`).then((res) => res.data),
+  create: (data: Partial<LogisticsRoute> & { stages?: Partial<import('../types').RouteStage>[] }) =>
+    api.post<LogisticsRoute>('/logistics-routes', data).then((res) => res.data),
+  trackByBatch: (batchNumber: string) =>
+    api
+      .get<ContainerTrackingResult>(`/logistics-routes/track/batch/${batchNumber}`)
+      .then((res) => res.data),
+  trackByContainer: (batchNumber: string) =>
+    api
+      .get<ContainerTrackingResult>(`/logistics-routes/track/batch/${batchNumber}`)
+      .then((res) => res.data),
+  addTracking: (routeId: number, containerId: number, notes?: string) =>
+    api
+      .post<CargoTracking>(`/logistics-routes/${routeId}/trackings`, { containerId, notes })
+      .then((res) => res.data),
+  advanceTracking: (trackingId: number) =>
+    api
+      .patch<CargoTracking>(`/logistics-routes/trackings/${trackingId}/advance`)
+      .then((res) => res.data),
+  delete: (id: number) => api.delete(`/logistics-routes/${id}`),
+};
+
 export const authApi = IS_DEMO_MODE ? demoAuthApi : realAuthApi;
 export const dashboardApi = IS_DEMO_MODE ? demoDashboardApi : realDashboardApi;
 export const vesselsApi = IS_DEMO_MODE ? demoVesselsApi : realVesselsApi;
@@ -151,5 +224,10 @@ export const trucksApi = IS_DEMO_MODE ? demoTrucksApi : realTrucksApi;
 export const truckVisitsApi = IS_DEMO_MODE ? demoTruckVisitsApi : realTruckVisitsApi;
 export const warehousesApi = IS_DEMO_MODE ? demoWarehousesApi : realWarehousesApi;
 export const wagonsApi = IS_DEMO_MODE ? demoWagonsApi : realWagonsApi;
+export const logisticsOrdersApi = IS_DEMO_MODE ? demoLogisticsOrdersApi : realLogisticsOrdersApi;
+export const counterpartiesApi = IS_DEMO_MODE ? demoCounterpartiesApi : realCounterpartiesApi;
+export const materialFlowsApi = IS_DEMO_MODE ? demoMaterialFlowsApi : realMaterialFlowsApi;
+export const infoFlowsApi = IS_DEMO_MODE ? demoInfoFlowsApi : realInfoFlowsApi;
+export const logisticsRoutesApi = IS_DEMO_MODE ? demoLogisticsRoutesApi : realLogisticsRoutesApi;
 
 export default api;

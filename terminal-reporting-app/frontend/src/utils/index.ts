@@ -71,29 +71,34 @@ export const BERTH_TYPE_LABELS: Record<string, string> = {
   MULTI_PURPOSE: 'Многоцелевой',
 };
 
-export const CONTAINER_TYPE_LABELS: Record<string, string> = {
-  TWENTY_GP: "20' GP",
-  TWENTY_HC: "20' HC",
-  FORTY_GP: "40' GP",
-  FORTY_HC: "40' HC",
-  FORTY_FIVE_HC: "45' HC",
-  TWENTY_RF: "20' RF",
-  FORTY_RF: "40' RF",
-  TWENTY_OT: "20' OT",
-  FORTY_OT: "40' OT",
-  TWENTY_FR: "20' FR",
-  FORTY_FR: "40' FR",
-  TWENTY_TK: "20' TK",
+export const CARGO_GRADE_LABELS: Record<string, string> = {
+  COAL_ANTHRACITE: 'Уголь каменный',
+  COAL_COKING: 'Уголь коксующийся',
+  OIL_CRUDE: 'Нефть сырая',
+  OIL_FUEL: 'Мазут / топливо',
+  PETROLEUM: 'Нефтепродукты',
 };
 
-export const CONTAINER_STATUS_LABELS: Record<string, string> = {
-  EMPTY: 'Пустой',
-  FULL: 'Полный',
-  ON_VESSEL: 'На судне',
-  IN_TERMINAL: 'На терминале',
-  ON_DELIVERY: 'На доставке',
-  DELIVERED: 'Доставлен',
+export const CONTAINER_TYPE_LABELS = CARGO_GRADE_LABELS;
+
+export const CARGO_CATEGORY_LABELS: Record<string, string> = {
+  COAL: 'Уголь',
+  OIL: 'Нефть',
+  PETROLEUM: 'Нефтепродукты',
 };
+
+export const CARGO_BATCH_STATUS_LABELS: Record<string, string> = {
+  ON_LAND: 'На суше (в пути на терминал)',
+  IN_STORAGE: 'На складе терминала',
+  LOADING_BERTH: 'Погрузка у причала',
+  ON_VESSEL: 'На судне',
+  AT_DESTINATION_PORT: 'В порту назначения',
+  DELIVERED: 'Доставлен',
+  IN_TERMINAL: 'На складе терминала',
+  FULL: 'Принят на терминал',
+};
+
+export const CONTAINER_STATUS_LABELS = CARGO_BATCH_STATUS_LABELS;
 
 export const WAGON_TYPE_LABELS: Record<string, string> = {
   PLATFORM: 'Платформа',
@@ -112,6 +117,8 @@ export const WAGON_STATUS_LABELS: Record<string, string> = {
 };
 
 export const WAREHOUSE_TYPE_LABELS: Record<string, string> = {
+  COAL_YARD: 'Площадка угля',
+  OIL_TANK: 'Резервуарный парк нефти',
   OPEN_YARD: 'Открытая площадка',
   COVERED: 'Крытый склад',
   REFRIGERATED: 'Холодильник',
@@ -134,29 +141,115 @@ export const TRUCK_VISIT_STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Отменен',
 };
 
-const ISO6346_LETTER_VALUES = [
-  10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 35, 36, 37, 38,
-];
+/** Номер партии груза терминала (уголь / нефть) */
+export function validateBatchNumber(number: string): boolean {
+  const normalized = number.toUpperCase().trim();
+  return /^[A-Z]{2,6}-[\dA-Z-]{4,14}$/.test(normalized) || /^[A-Z0-9-]{6,24}$/.test(normalized);
+}
 
 export function validateContainerNumber(number: string): boolean {
-  const normalized = number.toUpperCase().trim();
-  if (!/^[A-Z]{4}\d{7}$/.test(normalized)) {
-    return false;
-  }
-
-  let sum = 0;
-  for (let i = 0; i < 10; i++) {
-    const char = normalized[i];
-    const value = char >= 'A' && char <= 'Z'
-      ? ISO6346_LETTER_VALUES[char.charCodeAt(0) - 65]
-      : parseInt(char, 10);
-    sum += value * Math.pow(2, i);
-  }
-
-  const checkDigit = sum % 11;
-  const expected = checkDigit === 10 ? 0 : checkDigit;
-  return parseInt(normalized[10], 10) === expected;
+  return validateBatchNumber(number);
 }
+
+export const PARTNER_TYPE_LABELS: Record<string, string> = {
+  CLIENT: 'Клиент',
+  CARRIER: 'Перевозчик',
+  AGENT: 'Агент',
+  CUSTOMS: 'Таможня',
+  RAILWAY: 'Ж/д оператор',
+};
+
+export const ORDER_TYPE_LABELS: Record<string, string> = {
+  EXPORT_BULK: 'Экспорт навалом (уголь/нефть)',
+  STORAGE: 'Хранение на терминале',
+  SHIP_LOADING: 'Погрузка на судно',
+  TRANSPORT: 'Перевозка',
+  TRANSSHIPMENT: 'Перегрузка',
+  CUSTOMS: 'Таможня',
+};
+
+export const EXPORT_ROUTE_CHAIN =
+  'Поставщик → ЖД / Авто → Склад → Причал → Судно → Порт назначения';
+
+export const MANAGEMENT_LEVEL_LABELS: Record<string, string> = {
+  PLANNING: 'Плановый уровень',
+  DISPATCH: 'Диспетчерский уровень',
+  OPERATIONAL: 'Оперативный уровень',
+};
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Черновик',
+  PLANNED: 'Запланирован',
+  IN_PROGRESS: 'В работе',
+  COMPLETED: 'Завершён',
+  CANCELLED: 'Отменён',
+};
+
+export const ILS_FUNCTION_LABELS: Record<string, string> = {
+  PLANNING: 'Планирование',
+  REGULATION: 'Регулирование',
+  CONTROL: 'Контроль',
+  ANALYSIS: 'Анализ',
+  ACCOUNTING: 'Учёт',
+};
+
+export const MATERIAL_FLOW_TYPE_LABELS: Record<string, string> = {
+  ARRIVAL: 'Поступление',
+  DEPARTURE: 'Отгрузка',
+  INTERNAL_TRANSFER: 'Перемещение',
+  STORAGE: 'Хранение',
+};
+
+export const ROUTE_STATUS_LABELS: Record<string, string> = {
+  PLANNED: 'Запланирован',
+  ACTIVE: 'Активен',
+  COMPLETED: 'Завершён',
+  CANCELLED: 'Отменён',
+};
+
+export const ROUTE_STAGE_TYPE_LABELS: Record<string, string> = {
+  SUPPLIER: 'Поставщик',
+  RAIL_STATION: 'Ж/д фронт',
+  ROAD_GATE: 'Автовесовая',
+  WAREHOUSE: 'Склад терминала',
+  BERTH: 'Причал погрузки',
+  SHIP: 'Судно',
+  PORT: 'Порт назначения',
+  TERMINAL: 'Терминал',
+  CUSTOMS: 'Таможня',
+  CLIENT: 'Клиент',
+  BORDER: 'Граница',
+};
+
+export const ROUTE_STAGE_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Ожидается',
+  CURRENT: 'Текущий этап',
+  COMPLETED: 'Пройден',
+  SKIPPED: 'Пропущен',
+};
+
+export const CARGO_TRACKING_STATUS_LABELS: Record<string, string> = {
+  REGISTERED: 'Зарегистрирован',
+  IN_TRANSIT: 'В пути',
+  AT_STAGE: 'На этапе',
+  DELIVERED: 'Доставлен',
+  DELAYED: 'Задержка',
+};
+
+export const TRANSPORT_MODE_LABELS: Record<string, string> = {
+  SEA: 'Морской',
+  RAIL: 'Железнодорожный',
+  ROAD: 'Автомобильный',
+  WAREHOUSE: 'Складской',
+};
+
+export const USER_ROLE_LABELS: Record<string, string> = {
+  ADMIN: 'Администратор',
+  PLANNER: 'Плановик',
+  DISPATCHER: 'Диспетчер',
+  WAREHOUSE: 'Кладовщик',
+  USER: 'Пользователь',
+};
 
 export const CUSTOMS_STATUS_LABELS: Record<string, string> = {
   CLEARED: 'Выпущен',
@@ -186,4 +279,21 @@ export const STATUS_COLORS: Record<string, string> = {
   SCHEDULED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',
   IN_PROGRESS: 'bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300',
   COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-300',
+
+  DRAFT: 'bg-gray-200 text-gray-600 dark:bg-slate-700 dark:text-slate-400',
+  PLANNED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',
+
+  PLANNING: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300',
+  REGULATION: 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300',
+  CONTROL: 'bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300',
+  ANALYSIS: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/60 dark:text-cyan-300',
+  ACCOUNTING: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300',
+
+  CURRENT: 'bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300',
+  PENDING: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
+  SKIPPED: 'bg-gray-200 text-gray-500 dark:bg-slate-800 dark:text-slate-500',
+  REGISTERED: 'bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300',
+  AT_STAGE: 'bg-purple-100 text-purple-800 dark:bg-purple-900/60 dark:text-purple-300',
+  DELAYED: 'bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300',
+  ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-300',
 };
