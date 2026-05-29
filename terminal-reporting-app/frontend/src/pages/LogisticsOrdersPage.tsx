@@ -14,12 +14,15 @@ import {
   fromDateTimeLocal,
 } from '../utils';
 
+const TZ_ORDER_TYPES = ['EXPORT_BULK', 'STORAGE', 'SHIP_LOADING'] as const;
+
 const emptyForm = {
   orderNumber: '',
-  orderType: 'TRANSSHIPMENT',
-  managementLevel: 'DISPATCH',
+  orderType: 'EXPORT_BULK',
+  managementLevel: 'PLANNING',
   status: 'DRAFT',
   counterpartyId: '',
+  supplierName: '',
   cargoDescription: '',
   cargoWeight: '',
   origin: '',
@@ -74,6 +77,7 @@ export default function LogisticsOrdersPage() {
       managementLevel: order.managementLevel,
       status: order.status,
       counterpartyId: order.counterpartyId ? String(order.counterpartyId) : '',
+      supplierName: order.supplierName ?? '',
       cargoDescription: order.cargoDescription ?? '',
       cargoWeight: order.cargoWeight != null ? String(order.cargoWeight) : '',
       origin: order.origin ?? '',
@@ -95,6 +99,7 @@ export default function LogisticsOrdersPage() {
       managementLevel: form.managementLevel as ManagementLevel,
       status: form.status as OrderStatus,
       counterpartyId: form.counterpartyId ? Number(form.counterpartyId) : undefined,
+      supplierName: form.supplierName || undefined,
       cargoDescription: form.cargoDescription || undefined,
       cargoWeight: form.cargoWeight ? Number(form.cargoWeight) : undefined,
       origin: form.origin || undefined,
@@ -133,7 +138,7 @@ export default function LogisticsOrdersPage() {
     <div>
       <PageHeader
         title="Логистические заказы"
-        subtitle="Управление процедурами заказов — ядро функциональной подсистемы ИЛС"
+        subtitle="FR-07: заказы ИЛС с уровнями управления и привязкой к партиям и маршрутам"
         action={
           <button
             onClick={() => setShowForm(true)}
@@ -176,8 +181,8 @@ export default function LogisticsOrdersPage() {
               onChange={(e) => setForm({ ...form, orderType: e.target.value })}
               className="input-field"
             >
-              {Object.entries(ORDER_TYPE_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>{v}</option>
+              {TZ_ORDER_TYPES.map((k) => (
+                <option key={k} value={k}>{ORDER_TYPE_LABELS[k]}</option>
               ))}
             </select>
             <select
@@ -208,6 +213,12 @@ export default function LogisticsOrdersPage() {
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
+            <input
+              placeholder="Поставщик (шахта / НПЗ)"
+              value={form.supplierName}
+              onChange={(e) => setForm({ ...form, supplierName: e.target.value })}
+              className="input-field"
+            />
             <input
               placeholder="Вес груза (т)"
               value={form.cargoWeight}

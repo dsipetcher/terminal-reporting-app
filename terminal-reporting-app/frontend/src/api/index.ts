@@ -16,6 +16,8 @@ import type {
   LogisticsRoute,
   CargoTracking,
   ContainerTrackingResult,
+  PortDirectory,
+  CargoDirectory,
 } from '../types';
 import { API_BASE_URL, IS_DEMO_MODE } from './config';
 import {
@@ -34,6 +36,7 @@ import {
   demoMaterialFlowsApi,
   demoInfoFlowsApi,
   demoLogisticsRoutesApi,
+  demoDirectoriesApi,
 } from './demoStore';
 import { getStoredToken } from './authStorage';
 import type { AuthResponse, CreateUserRequest, UpdateUserRequest, User } from '../types';
@@ -214,6 +217,11 @@ const realLogisticsRoutesApi = {
   delete: (id: number) => api.delete(`/logistics-routes/${id}`),
 };
 
+const realDirectoriesApi = {
+  getPorts: () => api.get<PortDirectory[]>('/directories/ports').then((res) => res.data),
+  getCargo: () => api.get<CargoDirectory[]>('/directories/cargo').then((res) => res.data),
+};
+
 export const authApi = IS_DEMO_MODE ? demoAuthApi : realAuthApi;
 export const dashboardApi = IS_DEMO_MODE ? demoDashboardApi : realDashboardApi;
 export const vesselsApi = IS_DEMO_MODE ? demoVesselsApi : realVesselsApi;
@@ -229,5 +237,6 @@ export const counterpartiesApi = IS_DEMO_MODE ? demoCounterpartiesApi : realCoun
 export const materialFlowsApi = IS_DEMO_MODE ? demoMaterialFlowsApi : realMaterialFlowsApi;
 export const infoFlowsApi = IS_DEMO_MODE ? demoInfoFlowsApi : realInfoFlowsApi;
 export const logisticsRoutesApi = IS_DEMO_MODE ? demoLogisticsRoutesApi : realLogisticsRoutesApi;
+export const directoriesApi = IS_DEMO_MODE ? demoDirectoriesApi : realDirectoriesApi;
 
 export default api;

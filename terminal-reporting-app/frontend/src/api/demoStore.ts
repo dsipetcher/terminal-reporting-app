@@ -21,7 +21,10 @@ import type {
   CargoTracking,
   CargoTrackingEvent,
   ContainerTrackingResult,
+  PortDirectory,
+  CargoDirectory,
 } from '../types';
+import { cargoStatusFromStageType } from '../utils';
 import { simulateNetwork } from './config';
 
 const now = new Date().toISOString();
@@ -136,6 +139,20 @@ const counterparties: Counterparty[] = [
     createdAt: now,
     updatedAt: now,
   },
+];
+
+const portDirectory: PortDirectory[] = [
+  { id: 1, code: 'RUNVS', name: 'Новороссийск (терминал)', country: 'RU' },
+  { id: 2, code: 'TRMER', name: 'Мерсин', country: 'TR' },
+  { id: 3, code: 'CNQDG', name: 'Циндао', country: 'CN' },
+  { id: 4, code: 'RUTAM', name: 'Тамань (ТТНГ)', country: 'RU' },
+];
+
+const cargoDirectory: CargoDirectory[] = [
+  { id: 1, code: 'COAL-ANT', name: 'Уголь каменный', category: 'BULK' },
+  { id: 2, code: 'COAL-COK', name: 'Уголь коксующийся', category: 'BULK' },
+  { id: 3, code: 'OIL-CRUDE', name: 'Нефть сырая', category: 'LIQUID' },
+  { id: 4, code: 'OIL-FUEL', name: 'Мазут / топливо', category: 'LIQUID' },
 ];
 
 const logisticsOrders: LogisticsOrder[] = [
@@ -446,6 +463,16 @@ function attachTrackingRelations(tracking: CargoTracking): CargoTracking {
   };
 }
 
+function syncDemoCargoStatus(containerId: number, stageType: string) {
+  const ci = containers.findIndex((c) => c.id === containerId);
+  if (ci < 0) return;
+  containers[ci] = {
+    ...containers[ci],
+    status: cargoStatusFromStageType(stageType) as Container['status'],
+    updatedAt: now,
+  };
+}
+
 function demoAdvanceTracking(trackingId: number): CargoTracking {
   const index = cargoTrackings.findIndex((t) => t.id === trackingId);
   const tracking = cargoTrackings[index];
@@ -465,6 +492,10 @@ function demoAdvanceTracking(trackingId: number): CargoTracking {
       status: 'DELIVERED',
       lastEventAt: new Date().toISOString(),
     };
+    const ci = containers.findIndex((c) => c.id === tracking.containerId);
+    if (ci >= 0) {
+      containers[ci] = { ...containers[ci], status: 'DELIVERED', updatedAt: now };
+    }
     cargoTrackingEvents.unshift({
       id: nextId++,
       trackingId,
@@ -479,7 +510,7 @@ function demoAdvanceTracking(trackingId: number): CargoTracking {
       entityType: 'CARGO_TRACKING',
       entityId: trackingId,
       orderId: tracking.route?.orderId ?? 1,
-      message: `Контейнер ${tracking.container.containerNumber} доставлен`,
+      message: `Партия ${tracking.container.containerNumber} доставлена`,
     });
     const allDone = cargoTrackings
       .filter((t) => t.routeId === tracking.routeId)
@@ -501,6 +532,7 @@ function demoAdvanceTracking(trackingId: number): CargoTracking {
   nextStage.status = 'CURRENT';
   nextStage.actualAt = nextStage.actualAt ?? new Date().toISOString();
 
+  syncDemoCargoStatus(tracking.containerId, nextStage.stageType);
   const fromName = tracking.currentStage?.locationName ?? 'старт';
   cargoTrackings[index] = {
     ...tracking,
@@ -524,7 +556,7 @@ function demoAdvanceTracking(trackingId: number): CargoTracking {
     entityType: 'CARGO_TRACKING',
     entityId: trackingId,
     orderId: tracking.routeId === 1 ? 1 : undefined,
-    message: `Контейнер на этапе «${nextStage.locationName}»`,
+    message: `Партия ${tracking.container.containerNumber}: ${cargoStatusFromStageType(nextStage.stageType)} — «${nextStage.locationName}»`,
   });
 
   return attachTrackingRelations(cargoTrackings[index]);
@@ -874,6 +906,11 @@ export const demoCounterpartiesApi = {
   },
 };
 
+export const demoDirectoriesApi = {
+  getPorts: () => simulateNetwork([...portDirectory]),
+  getCargo: () => simulateNetwork([...cargoDirectory]),
+};
+
 export const demoLogisticsOrdersApi = {
   getAll: (params?: { status?: string; managementLevel?: string; orderType?: string }) => {
     let list = logisticsOrders.map(attachOrderRelations);
@@ -894,10 +931,11 @@ export const demoLogisticsOrdersApi = {
     const item = attachOrderRelations({
       id: nextId++,
       orderNumber: data.orderNumber || `ILS-DEMO-${nextId}`,
-      orderType: data.orderType || 'TRANSPORT',
+      orderType: data.orderType || 'EXPORT_BULK',
       managementLevel: data.managementLevel || 'PLANNING',
       status: (data.status || 'DRAFT') as LogisticsOrder['status'],
       counterpartyId: data.counterpartyId,
+      supplierName: data.supplierName,
       cargoDescription: data.cargoDescription,
       cargoWeight: data.cargoWeight,
       origin: data.origin,
@@ -1147,7 +1185,7 @@ export const demoLogisticsRoutesApi = {
       entityType: 'CARGO_TRACKING',
       entityId: trackingId,
       orderId: route.orderId,
-      message: `Контейнер ${container.containerNumber} на маршруте ${route.routeNumber}`,
+      message: `Партия ${container.containerNumber} на маршруте ${route.routeNumber}`,
     });
     return simulateNetwork(attachTrackingRelations(item));
   },
@@ -1181,6 +1219,15 @@ const demoUsers: User[] = [
   },
   {
     id: 2,
+    username: 'planner',
+    role: 'PLANNER',
+    fullName: 'Плановик (демо)',
+    department: 'Планирование',
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: 3,
     username: 'dispatcher',
     role: 'DISPATCHER',
     fullName: 'Диспетчер (демо)',
@@ -1188,9 +1235,18 @@ const demoUsers: User[] = [
     createdAt: now,
     updatedAt: now,
   },
+  {
+    id: 4,
+    username: 'warehouse',
+    role: 'WAREHOUSE',
+    fullName: 'Кладовщик (демо)',
+    department: 'Склад',
+    createdAt: now,
+    updatedAt: now,
+  },
 ];
 
-let demoUserId = 2;
+let demoUserId = 4;
 
 export const demoAuthApi = {
   login: async (username: string, password: string): Promise<AuthResponse> => {
@@ -1203,11 +1259,19 @@ export const demoAuthApi = {
       };
     }
 
+    if (username === 'planner' && password === 'planner') {
+      return { token: 'demo-planner-token', user: demoUsers[1] };
+    }
+
     if (username === 'dispatcher' && password === 'dispatcher') {
       return {
         token: 'demo-dispatcher-token',
-        user: demoUsers[1],
+        user: demoUsers[2],
       };
+    }
+
+    if (username === 'warehouse' && password === 'warehouse') {
+      return { token: 'demo-warehouse-token', user: demoUsers[3] };
     }
 
     const user = demoUsers.find((item) => item.username === username);

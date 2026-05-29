@@ -214,8 +214,8 @@ export default function TrucksPage() {
   return (
     <div>
       <PageHeader
-        title="Управление автотранспортом"
-        subtitle={`Автомобилей: ${trucks.length} | Визитов: ${visits.length}`}
+        title="Автотранспорт"
+        subtitle="FR-12: идентификаторы авто и визитов для сопоставления с партией груза"
         action={
           <div className="flex gap-2">
             <button onClick={() => { if (showTruckForm && !editingTruckId) resetTruckForm(); else { setEditingTruckId(null); setTruckForm(emptyTruckForm); setShowTruckForm(!showTruckForm); } }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
@@ -290,7 +290,7 @@ export default function TrucksPage() {
               <input type="text" value={visitForm.gateNumber} onChange={(e) => setVisitForm({ ...visitForm, gateNumber: e.target.value })} className="input-field" />
             </div>
             <div className="md:col-span-2">
-              <label className="label-field">Контейнер</label>
+              <label className="label-field">Партия груза</label>
               <select value={visitForm.containerId} onChange={(e) => setVisitForm({ ...visitForm, containerId: e.target.value })} className="input-field">
                 <option value="">Не выбран</option>
                 {containers.map((c) => (
@@ -332,7 +332,7 @@ export default function TrucksPage() {
                     <p className="text-sm text-muted">{visit.truck.carrier} | {TRUCK_TYPE_LABELS[visit.truck.truckType]}</p>
                     <p className="text-sm text-muted">Цель: {visit.purpose}</p>
                     <p className="text-sm text-subtle">Тайм-слот: {formatDateTime(visit.timeSlot)}</p>
-                    {visit.container && <p className="text-sm text-muted">Контейнер: {visit.container.containerNumber}</p>}
+                    {visit.container && <p className="text-sm text-muted">Партия: {visit.container.containerNumber}</p>}
                     {visit.timeIn && <p className="text-sm text-subtle">Въезд: {formatDateTime(visit.timeIn)}</p>}
                     {visit.timeOut && <p className="text-sm text-subtle">Выезд: {formatDateTime(visit.timeOut)}</p>}
                   </div>

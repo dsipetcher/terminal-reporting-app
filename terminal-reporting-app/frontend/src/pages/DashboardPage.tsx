@@ -17,6 +17,7 @@ import {
   Ship,
   Package,
   Train,
+  Truck,
   Warehouse,
   ClipboardList,
   ArrowLeftRight,
@@ -76,15 +77,15 @@ export default function DashboardPage() {
     <div>
       <PageHeader
         title="Панель управления ИЛС"
-        subtitle="ИЛС угольно-нефтяного экспортного терминала"
+        subtitle="Объект учёта — груз · прототип по ТЗ §3"
       />
 
       <Card className="mb-8 border border-blue-200 dark:border-blue-900/50 bg-blue-50/50 dark:bg-blue-950/20">
         <p className="text-sm text-secondary leading-relaxed">
           <strong className="text-primary">ИЛС угольно-нефтяного терминала</strong> отслеживает
-          полный путь груза: {EXPORT_ROUTE_CHAIN}. Прибытие на терминал — по железной дороге и
-          автотранспорту, разгрузка на склады угля и нефти, погрузка на балкеры и танкеры, доставка
-          в конечный порт назначения.
+          полный путь <strong className="text-primary">груза</strong>: {EXPORT_ROUTE_CHAIN}. Ж/д вагон,
+          автомобиль и судно — идентификаторы для сопоставления с партией; склад и транспорт отражают
+          текущее состояние груза на каждом этапе.
         </p>
       </Card>
 
@@ -138,6 +139,37 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+        <Link to="/cargo-tracking">
+          <Card className="hover:shadow-xl transition-shadow cursor-pointer border-l-4 border-l-rose-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted font-medium">Партии на маршруте</p>
+                <p className="text-3xl font-bold text-rose-600 dark:text-rose-400 mt-2">
+                  {stats?.cargoOnRoutes ?? 0}
+                </p>
+                <p className="text-xs text-subtle mt-1">
+                  Всего партий: {stats?.containers ?? 0}
+                </p>
+              </div>
+              <MapPinned className="w-8 h-8 text-rose-400" />
+            </div>
+          </Card>
+        </Link>
+
+        <Link to="/cargo-lots">
+          <Card className="hover:shadow-xl transition-shadow cursor-pointer border-l-4 border-l-green-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted font-medium">Партии на терминале</p>
+                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
+                  {stats?.containers || 0}
+                </p>
+              </div>
+              <Package className="w-8 h-8 text-green-400" />
+            </div>
+          </Card>
+        </Link>
+
         <Link to="/logistics-orders">
           <Card className="hover:shadow-xl transition-shadow cursor-pointer border-l-4 border-l-indigo-500">
             <div className="flex items-center justify-between">
@@ -157,30 +189,13 @@ export default function DashboardPage() {
           <Card className="hover:shadow-xl transition-shadow cursor-pointer border-l-4 border-l-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted font-medium">Судозаходы</p>
+                <p className="text-sm text-muted font-medium">Судозаходы (сопоставление)</p>
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">
                   {stats?.vesselCallsActive || 0}
                 </p>
                 <p className="text-xs text-subtle mt-1">Всего: {stats?.vesselCallsTotal || 0}</p>
               </div>
               <Ship className="w-8 h-8 text-blue-400" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link to="/cargo-tracking">
-          <Card className="hover:shadow-xl transition-shadow cursor-pointer border-l-4 border-l-rose-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted font-medium">Грузы на маршрутах</p>
-                <p className="text-3xl font-bold text-rose-600 dark:text-rose-400 mt-2">
-                  {stats?.cargoOnRoutes ?? 0}
-                </p>
-                <p className="text-xs text-subtle mt-1">
-                  Активных маршрутов: {stats?.activeRoutes ?? 0}
-                </p>
-              </div>
-              <MapPinned className="w-8 h-8 text-rose-400" />
             </div>
           </Card>
         </Link>
@@ -217,6 +232,7 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      <p className="text-xs text-muted mb-2 px-1">Транспорт — идентификаторы для сопоставления с грузом</p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <Link to="/cargo-lots" className="text-center p-4 border border-default rounded-lg hover-surface">
           <Package className="w-6 h-6 mx-auto text-green-500 mb-1" />
@@ -229,6 +245,7 @@ export default function DashboardPage() {
           <p className="text-xs text-muted">Вагоны</p>
         </Link>
         <Link to="/trucks" className="text-center p-4 border border-default rounded-lg hover-surface">
+          <Truck className="w-6 h-6 mx-auto text-amber-500 mb-1" />
           <p className="text-lg font-bold">{stats?.trucks || 0}</p>
           <p className="text-xs text-muted">Автопарк</p>
         </Link>
@@ -240,7 +257,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card title="Текущие судозаходы">
+        <Card title="Судозаходы (сопоставление с грузом)">
           {activeVesselCalls.length === 0 ? (
             <p className="text-subtle text-center py-8">Нет активных судозаходов</p>
           ) : (

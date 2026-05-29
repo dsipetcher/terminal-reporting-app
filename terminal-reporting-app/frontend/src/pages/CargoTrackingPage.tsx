@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { logisticsRoutesApi, containersApi } from '../api';
+import {
+  logisticsRoutesApi,
+  containersApi,
+  wagonsApi,
+  truckVisitsApi,
+  vesselCallsApi,
+} from '../api';
 import { EXPORT_ROUTE_CHAIN } from '../utils';
 import type {
   LogisticsRoute,
@@ -7,6 +13,9 @@ import type {
   ContainerTrackingResult,
   Container,
   RouteStage,
+  Wagon,
+  TruckVisit,
+  VesselCall,
 } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
@@ -18,9 +27,11 @@ import {
   ROUTE_STAGE_TYPE_LABELS,
   ROUTE_STAGE_STATUS_LABELS,
   CARGO_TRACKING_STATUS_LABELS,
+  CARGO_BATCH_STATUS_LABELS,
+  CARGO_CATEGORY_LABELS,
   TRANSPORT_MODE_LABELS,
 } from '../utils';
-import { Search, MapPin, ChevronRight, Package, Route } from 'lucide-react';
+import { Search, MapPin, ChevronRight, Train, Truck, Ship } from 'lucide-react';
 
 function RouteTimeline({ stages, currentStageId }: { stages: RouteStage[]; currentStageId?: number }) {
   return (
@@ -49,21 +60,75 @@ function RouteTimeline({ stages, currentStageId }: { stages: RouteStage[]; curre
             <div className="ml-3 md:ml-0 md:mt-2 md:text-center flex-1">
               <p className="text-xs font-semibold text-primary">{ROUTE_STAGE_TYPE_LABELS[stage.stageType]}</p>
               <p className="text-sm font-medium">{stage.locationName}</p>
-              <p className="text-xs text-muted">{stage.locationCode}</p>
               {stage.transportMode && (
                 <p className="text-xs text-subtle">{TRANSPORT_MODE_LABELS[stage.transportMode]}</p>
               )}
-              <StatusBadge
-                status={stage.status}
-                label={ROUTE_STAGE_STATUS_LABELS[stage.status]}
-              />
-              {stage.actualAt && (
-                <p className="text-xs text-subtle mt-1">{formatDateTime(stage.actualAt)}</p>
-              )}
+              <StatusBadge status={stage.status} label={ROUTE_STAGE_STATUS_LABELS[stage.status]} />
             </div>
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function TransportLinks({
+  container,
+  wagons,
+  truckVisits,
+  vesselCalls,
+}: {
+  container: Container;
+  wagons: Wagon[];
+  truckVisits: TruckVisit[];
+  vesselCalls: VesselCall[];
+}) {
+  const linkedWagons = wagons.filter((w) => w.containerId === container.id);
+  const linkedVisits = truckVisits.filter((v) => v.containerId === container.id);
+  const vesselCall = container.vesselCallId
+    ? vesselCalls.find((vc) => vc.id === container.vesselCallId)
+    : undefined;
+
+  const items: { icon: typeof Train; label: string; value: string }[] = [];
+  linkedWagons.forEach((w) => {
+    items.push({
+      icon: Train,
+      label: 'Вагон',
+      value: `${w.number}${w.trainNumber ? ` · поезд ${w.trainNumber}` : ''}`,
+    });
+  });
+  linkedVisits.forEach((v) => {
+    items.push({
+      icon: Truck,
+      label: 'Авто',
+      value: v.truck?.licensePlate ?? `Визит #${v.id}`,
+    });
+  });
+  if (vesselCall) {
+    items.push({
+      icon: Ship,
+      label: 'Судозаход',
+      value: `${vesselCall.vessel.name} · рейс ${vesselCall.voyageNumber}`,
+    });
+  }
+
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-subtle">
+        Идентификаторы транспорта не привязаны — груз учитывается только по номеру партии.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2 text-sm p-2 rounded-lg bg-slate-50 dark:bg-slate-900">
+          <item.icon className="w-4 h-4 text-muted shrink-0" />
+          <span className="text-subtle">{item.label}:</span>
+          <span className="font-mono text-primary">{item.value}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -80,17 +145,13 @@ function TrackingCard({
   const stages = tracking.route?.stages ?? [];
   return (
     <div className="border border-default rounded-lg p-4 mb-4">
-      <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+      <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
         <div>
-          <p className="font-mono font-bold text-lg">{tracking.container.containerNumber}</p>
           <p className="text-sm text-muted">
             Маршрут {tracking.route?.routeNumber}: {tracking.route?.origin} → {tracking.route?.destination}
           </p>
         </div>
-        <StatusBadge
-          status={tracking.status}
-          label={CARGO_TRACKING_STATUS_LABELS[tracking.status]}
-        />
+        <StatusBadge status={tracking.status} label={CARGO_TRACKING_STATUS_LABELS[tracking.status]} />
       </div>
       {stages.length > 0 && (
         <RouteTimeline stages={stages} currentStageId={tracking.currentStageId} />
@@ -98,17 +159,17 @@ function TrackingCard({
       {tracking.currentStage && (
         <p className="text-sm text-secondary mb-3">
           <MapPin className="w-4 h-4 inline mr-1 text-amber-500" />
-          Текущая позиция: <strong>{tracking.currentStage.locationName}</strong>
+          Текущее состояние груза: <strong>{ROUTE_STAGE_TYPE_LABELS[tracking.currentStage.stageType]}</strong>
+          {' · '}{tracking.currentStage.locationName}
         </p>
       )}
-      {tracking.notes && <p className="text-xs text-subtle mb-3">{tracking.notes}</p>}
       {tracking.events && tracking.events.length > 0 && (
         <div className="mb-3">
-          <p className="text-xs font-semibold text-muted uppercase mb-2">История перемещений</p>
+          <p className="text-xs font-semibold text-muted uppercase mb-2">История состояний</p>
           <ul className="space-y-1">
             {tracking.events.map((ev) => (
               <li key={ev.id} className="text-sm text-secondary">
-                {formatDateTime(ev.eventAt)} — {ev.description || 'Перемещение'}
+                {formatDateTime(ev.eventAt)} — {ev.description || 'Смена состояния'}
               </li>
             ))}
           </ul>
@@ -120,7 +181,7 @@ function TrackingCard({
           disabled={advancing === tracking.id}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
         >
-          {advancing === tracking.id ? 'Обновление...' : 'Перевести на следующий этап'}
+          {advancing === tracking.id ? 'Обновление...' : 'Перевести груз на следующий этап'}
         </button>
       )}
     </div>
@@ -128,45 +189,64 @@ function TrackingCard({
 }
 
 export default function CargoTrackingPage() {
+  const [cargoList, setCargoList] = useState<Container[]>([]);
   const [routes, setRoutes] = useState<LogisticsRoute[]>([]);
-  const [containers, setContainers] = useState<Container[]>([]);
+  const [wagons, setWagons] = useState<Wagon[]>([]);
+  const [truckVisits, setTruckVisits] = useState<TruckVisit[]>([]);
+  const [vesselCalls, setVesselCalls] = useState<VesselCall[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
   const [searchResult, setSearchResult] = useState<ContainerTrackingResult | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [selectedRouteId, setSelectedRouteId] = useState<number | null>(null);
-  const [routeDetail, setRouteDetail] = useState<LogisticsRoute | null>(null);
   const [advancing, setAdvancing] = useState<number | null>(null);
-  const [addContainerId, setAddContainerId] = useState('');
+  const [showRoutes, setShowRoutes] = useState(false);
+  const [addRouteId, setAddRouteId] = useState('');
 
-  const loadRoutes = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const [routesData, containersData] = await Promise.all([
-        logisticsRoutesApi.getAll(),
+      const [containersData, routesData, wagonsData, visitsData, callsData] = await Promise.all([
         containersApi.getAll(),
+        logisticsRoutesApi.getAll(),
+        wagonsApi.getAll(),
+        truckVisitsApi.getAll(),
+        vesselCallsApi.getAll(),
       ]);
+      setCargoList(containersData);
       setRoutes(routesData);
-      setContainers(containersData);
+      setWagons(wagonsData);
+      setTruckVisits(visitsData);
+      setVesselCalls(callsData);
     } catch (error) {
-      console.error('Ошибка загрузки маршрутов:', error);
+      console.error('Ошибка загрузки данных:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadRoutes();
+    loadData();
   }, []);
 
-  const loadRouteDetail = async (id: number) => {
+  const selectBatch = async (batchNumber: string) => {
+    setSelectedBatch(batchNumber);
+    setSearchQuery(batchNumber);
+    setSearchError('');
+    setSearchLoading(true);
     try {
-      const detail = await logisticsRoutesApi.getById(id);
-      setRouteDetail(detail);
-      setSelectedRouteId(id);
-    } catch (error) {
-      console.error('Ошибка загрузки маршрута:', error);
+      const result = await logisticsRoutesApi.trackByBatch(batchNumber);
+      setSearchResult(result);
+      const fresh = cargoList.find((c) => c.containerNumber === batchNumber);
+      if (fresh && result.container) {
+        setSearchResult({ ...result, container: { ...fresh, ...result.container } });
+      }
+    } catch {
+      setSearchResult(null);
+      setSearchError('Партия не найдена');
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -174,56 +254,51 @@ export default function CargoTrackingPage() {
     e.preventDefault();
     const q = searchQuery.trim().toUpperCase();
     if (!q) return;
-    setSearchError('');
-    setSearchLoading(true);
-    try {
-      const result = await logisticsRoutesApi.trackByBatch(q);
-      setSearchResult(result);
-    } catch {
-      setSearchResult(null);
-      setSearchError('Партия груза не найдена или не привязана к маршруту');
-    } finally {
-      setSearchLoading(false);
-    }
+    await selectBatch(q);
   };
 
   const handleAdvance = async (trackingId: number) => {
     try {
       setAdvancing(trackingId);
       await logisticsRoutesApi.advanceTracking(trackingId);
-      if (selectedRouteId) await loadRouteDetail(selectedRouteId);
-      if (searchResult) {
-        const updated = await logisticsRoutesApi.trackByBatch(searchResult.container.containerNumber);
-        setSearchResult(updated);
-      }
-      await loadRoutes();
+      if (selectedBatch) await selectBatch(selectedBatch);
+      await loadData();
     } catch (error) {
-      console.error('Ошибка перевода на этап:', error);
+      console.error('Ошибка смены состояния:', error);
     } finally {
       setAdvancing(null);
     }
   };
 
   const handleAddToRoute = async () => {
-    if (!selectedRouteId || !addContainerId) return;
+    if (!activeCargo || !addRouteId) return;
     try {
-      await logisticsRoutesApi.addTracking(selectedRouteId, Number(addContainerId));
-      setAddContainerId('');
-      await loadRouteDetail(selectedRouteId);
-      await loadRoutes();
+      await logisticsRoutesApi.addTracking(Number(addRouteId), activeCargo.id);
+      setAddRouteId('');
+      await selectBatch(activeCargo.containerNumber);
+      await loadData();
     } catch (error) {
-      console.error('Ошибка добавления на маршрут:', error);
+      console.error('Ошибка постановки на маршрут:', error);
     }
   };
 
-  if (loading) return <LoadingSpinner text="Загрузка маршрутов..." />;
+  const activeCargo = searchResult?.container ?? cargoList.find((c) => c.containerNumber === selectedBatch);
+
+  if (loading) return <LoadingSpinner text="Загрузка грузов..." />;
 
   return (
     <div>
       <PageHeader
-        title="Отслеживание грузов по маршрутам"
-        subtitle={`Угольно-нефтяной терминал: ${EXPORT_ROUTE_CHAIN}`}
+        title="Отслеживание грузов"
+        subtitle={`Объект учёта — партия груза. Транспорт и склад — текущее состояние. ${EXPORT_ROUTE_CHAIN}`}
       />
+
+      <Card className="mb-6 border border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20">
+        <p className="text-sm text-secondary">
+          ИЛС отслеживает <strong className="text-primary">груз</strong> от поставщика до порта назначения.
+          Ж/д вагон, автомобиль или судно — идентификаторы для сопоставления с партией, а не отдельные объекты учёта.
+        </p>
+      </Card>
 
       <Card className="mb-6">
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
@@ -242,57 +317,40 @@ export default function CargoTrackingPage() {
             disabled={searchLoading}
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
           >
-            {searchLoading ? 'Поиск...' : 'Найти груз'}
+            {searchLoading ? 'Поиск...' : 'Найти партию'}
           </button>
         </form>
         {searchError && <p className="text-red-500 text-sm mt-2">{searchError}</p>}
       </Card>
 
-      {searchResult && (
-        <Card title={`Результат: ${searchResult.container.containerNumber}`} className="mb-6">
-          {searchResult.trackings.length === 0 ? (
-            <p className="text-subtle py-4">Контейнер не привязан ни к одному маршруту</p>
-          ) : (
-            searchResult.trackings.map((t) => (
-              <TrackingCard
-                key={t.id}
-                tracking={t}
-                onAdvance={handleAdvance}
-                advancing={advancing}
-              />
-            ))
-          )}
-        </Card>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card title="Логистические маршруты" className="lg:col-span-1">
-          {routes.length === 0 ? (
-            <p className="text-subtle text-sm py-4">Маршруты не созданы</p>
+        <Card title="Партии на терминале" className="lg:col-span-1">
+          {cargoList.length === 0 ? (
+            <p className="text-subtle text-sm py-4">Партий нет</p>
           ) : (
             <ul className="space-y-2">
-              {routes.map((route) => (
-                <li key={route.id}>
+              {cargoList.map((cargo) => (
+                <li key={cargo.id}>
                   <button
-                    onClick={() => loadRouteDetail(route.id)}
+                    onClick={() => selectBatch(cargo.containerNumber)}
                     className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                      selectedRouteId === route.id
+                      selectedBatch === cargo.containerNumber
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
                         : 'border-default hover-surface'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Route className="w-4 h-4 text-blue-500 shrink-0" />
-                      <span className="font-mono font-semibold text-sm">{route.routeNumber}</span>
-                    </div>
-                    <p className="text-xs text-muted mt-1">
-                      {route.origin} → {route.destination}
-                    </p>
-                    <div className="flex gap-2 mt-2">
-                      <StatusBadge status={route.status} label={ROUTE_STATUS_LABELS[route.status]} />
-                      <span className="text-xs text-subtle">
-                        {route._count?.trackings ?? 0} груз(ов) · {route._count?.stages ?? 0} этапов
-                      </span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-mono font-semibold text-sm">{cargo.containerNumber}</p>
+                        <p className="text-xs text-muted mt-0.5">
+                          {CARGO_CATEGORY_LABELS[cargo.cargoCategory ?? 'COAL']}
+                          {cargo.quantityTons ? ` · ${cargo.quantityTons} т` : ''}
+                        </p>
+                      </div>
+                      <StatusBadge
+                        status={cargo.status}
+                        label={CARGO_BATCH_STATUS_LABELS[cargo.status]}
+                      />
                     </div>
                   </button>
                 </li>
@@ -301,67 +359,113 @@ export default function CargoTrackingPage() {
           )}
         </Card>
 
-        <div className="lg:col-span-2">
-          {routeDetail ? (
-            <Card title={`Маршрут ${routeDetail.routeNumber}`}>
-              <p className="text-sm text-muted mb-4">
-                {routeDetail.name || `${routeDetail.origin} → ${routeDetail.destination}`}
-              </p>
-              {routeDetail.order && (
-                <p className="text-sm text-muted mb-4">
-                  Заказ: {routeDetail.order.orderNumber}
-                </p>
-              )}
-              {routeDetail.stages && routeDetail.stages.length > 0 && (
-                <div className="mb-6">
-                  <p className="text-xs font-semibold text-muted uppercase mb-2">Схема маршрута</p>
-                  <RouteTimeline stages={routeDetail.stages} />
+        <div className="lg:col-span-2 space-y-6">
+          {activeCargo ? (
+            <>
+              <Card title={`Партия ${activeCargo.containerNumber}`}>
+                <div className="flex flex-wrap gap-4 mb-4">
+                  <StatusBadge
+                    status={activeCargo.status}
+                    label={CARGO_BATCH_STATUS_LABELS[activeCargo.status]}
+                  />
+                  {activeCargo.supplierName && (
+                    <span className="text-sm text-muted">Поставщик: {activeCargo.supplierName}</span>
+                  )}
+                  {activeCargo.warehouse && (
+                    <span className="text-sm text-muted">Склад: {activeCargo.warehouse.number}</span>
+                  )}
                 </div>
-              )}
 
-              <div className="flex flex-wrap gap-2 mb-4 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                <select
-                  value={addContainerId}
-                  onChange={(e) => setAddContainerId(e.target.value)}
-                  className="input-field flex-1 min-w-[200px]"
-                >
-                  <option value="">Добавить партию груза на маршрут</option>
-                  {containers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.containerNumber}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleAddToRoute}
-                  disabled={!addContainerId}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                >
-                  <Package className="w-4 h-4 inline mr-1" />
-                  Поставить на отслеживание
-                </button>
-              </div>
+                <p className="text-xs font-semibold text-muted uppercase mb-2">
+                  Сопоставление с транспортом (идентификаторы)
+                </p>
+                <TransportLinks
+                  container={activeCargo}
+                  wagons={wagons}
+                  truckVisits={truckVisits}
+                  vesselCalls={vesselCalls}
+                />
+              </Card>
 
-              {routeDetail.trackings && routeDetail.trackings.length > 0 ? (
-                routeDetail.trackings.map((t) => (
+              {searchResult && searchResult.trackings.length > 0 ? (
+                searchResult.trackings.map((t) => (
                   <TrackingCard
                     key={t.id}
-                    tracking={{ ...t, route: routeDetail }}
+                    tracking={t}
                     onAdvance={handleAdvance}
                     advancing={advancing}
                   />
                 ))
               ) : (
-                <p className="text-subtle text-center py-6">На маршруте нет отслеживаемых грузов</p>
+                <Card>
+                  <p className="text-subtle py-4">
+                    Партия не привязана к логистическому маршруту. Добавьте её на маршрут в разделе ниже.
+                  </p>
+                </Card>
               )}
-            </Card>
+            </>
           ) : (
             <Card>
               <p className="text-subtle text-center py-12">
-                Выберите маршрут слева или найдите груз по номеру контейнера
+                Выберите партию слева или найдите по номеру
               </p>
             </Card>
           )}
+
+          <Card>
+            <button
+              type="button"
+              onClick={() => setShowRoutes(!showRoutes)}
+              className="w-full flex items-center justify-between text-left"
+            >
+              <span className="font-semibold text-primary">Логистические маршруты (шаблоны цепочки)</span>
+              <ChevronRight className={`w-5 h-5 transition-transform ${showRoutes ? 'rotate-90' : ''}`} />
+            </button>
+            {showRoutes && (
+              <div className="mt-4 space-y-4">
+                {activeCargo && (
+                  <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                    <select
+                      value={addRouteId}
+                      onChange={(e) => setAddRouteId(e.target.value)}
+                      className="input-field flex-1 min-w-[200px]"
+                    >
+                      <option value="">Выберите маршрут для партии {activeCargo.containerNumber}</option>
+                      {routes.map((route) => (
+                        <option key={route.id} value={route.id}>
+                          {route.routeNumber} · {route.origin} → {route.destination}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleAddToRoute}
+                      disabled={!addRouteId}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
+                    >
+                      Поставить на отслеживание (FR-05)
+                    </button>
+                  </div>
+                )}
+                {routes.length === 0 ? (
+                  <p className="text-subtle text-sm">Маршруты не созданы</p>
+                ) : (
+                  routes.map((route) => (
+                    <div key={route.id} className="p-3 rounded-lg border border-default">
+                      <p className="font-mono font-semibold text-sm">{route.routeNumber}</p>
+                      <p className="text-xs text-muted">{route.origin} → {route.destination}</p>
+                      <div className="flex gap-2 mt-2">
+                        <StatusBadge status={route.status} label={ROUTE_STATUS_LABELS[route.status]} />
+                        <span className="text-xs text-subtle">
+                          {route._count?.trackings ?? 0} партий · {route._count?.stages ?? 0} этапов
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </div>

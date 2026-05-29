@@ -35,7 +35,7 @@ export default function LoginPage() {
           <Network className="w-8 h-8 text-blue-400" />
           <div>
             <h1 className="text-2xl font-bold text-slate-100">ИЛС</h1>
-            <p className="text-sm text-slate-400">Информационная логистическая система</p>
+            <p className="text-sm text-slate-400">Прототип ИЛС · угольно-нефтяной терминал</p>
           </div>
         </div>
 
@@ -81,9 +81,9 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-xs text-slate-500 text-center leading-relaxed">
-          Демо: admin / admin · Угольно-нефтяной терминал
+          Демо (ТЗ §9): admin/admin · planner/planner · dispatcher/dispatcher · warehouse/warehouse
           <br />
-          Отслеживание партии: COAL-2026-0001
+          Партия для отслеживания: COAL-2026-0001 · маршрут RT-EXPORT-COAL-001
         </p>
       </div>
     </div>

@@ -11,7 +11,7 @@ const emptyForm = {
   number: '',
   name: '',
   capacity: '',
-  warehouseType: 'OPEN_YARD',
+  warehouseType: 'COAL_YARD',
   zone: '',
 };
 
@@ -103,8 +103,8 @@ export default function WarehousesPage() {
   return (
     <div>
       <PageHeader
-        title="Управление складами"
-        subtitle={`Всего: ${warehouses.length} складов`}
+        title="Склады угля и нефти"
+        subtitle="FR-14–15: размещение партий, ёмкость и перемещение груза"
         action={
           <button
             onClick={() => {
@@ -252,7 +252,7 @@ export default function WarehousesPage() {
                         <span className="font-medium text-primary">{w._count.wagons}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted">Контейнеров:</span>
+                        <span className="text-muted">Партий груза:</span>
                         <span className="font-medium text-primary">{w._count.containers}</span>
                       </div>
                     </div>

@@ -205,7 +205,7 @@ export default function ContainersPage() {
     <div>
       <PageHeader
         title="Партии груза (уголь / нефть)"
-        subtitle={`Учётные единицы ИЛС · всего: ${containers.length}`}
+        subtitle="FR-01–02: учётная единица ИЛС · CRUD и поиск по номеру партии"
         action={
           <button
             onClick={() => {

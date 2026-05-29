@@ -48,7 +48,7 @@ export default function FlowsPage() {
     <div>
       <PageHeader
         title="Информационные и материальные потоки"
-        subtitle="Согласование движения грузов и информации в рамках ИЛС"
+        subtitle="Движение партий груза; транспорт отражает текущий режим перемещения"
       />
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -122,8 +122,9 @@ export default function FlowsPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-default text-left text-muted">
+                    <th className="py-2 pr-4">Партия</th>
                     <th className="py-2 pr-4">Тип</th>
-                    <th className="py-2 pr-4">Транспорт</th>
+                    <th className="py-2 pr-4">Состояние / режим</th>
                     <th className="py-2 pr-4">Маршрут</th>
                     <th className="py-2 pr-4">Кол-во</th>
                     <th className="py-2 pr-4">Заказ</th>
@@ -133,6 +134,9 @@ export default function FlowsPage() {
                 <tbody>
                   {materialFlows.map((flow) => (
                     <tr key={flow.id} className="border-b border-default hover-surface">
+                      <td className="py-3 pr-4 font-mono font-semibold">
+                        {flow.container?.containerNumber ?? '—'}
+                      </td>
                       <td className="py-3 pr-4">{MATERIAL_FLOW_TYPE_LABELS[flow.flowType]}</td>
                       <td className="py-3 pr-4">{TRANSPORT_MODE_LABELS[flow.transportMode]}</td>
                       <td className="py-3 pr-4 text-muted">

@@ -164,7 +164,7 @@ export default function VesselCallsPage() {
     <div>
       <PageHeader
         title="Судозаходы"
-        subtitle={`Всего: ${vesselCalls.length} судозаходов`}
+        subtitle="FR-13: идентификатор рейса для сопоставления с партией груза"
         action={
           <button
             onClick={() => {

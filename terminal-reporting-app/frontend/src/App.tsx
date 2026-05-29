@@ -20,10 +20,12 @@ import {
   ArrowLeftRight,
   Network,
   MapPinned,
+  BookOpen,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
-import { AdminRoute, ProtectedRoute } from './components/ProtectedRoute';
+import { AdminRoute, ProtectedRoute, RoleRoute } from './components/ProtectedRoute';
+import { canAccessRoute } from './lib/roleAccess';
 
 import DashboardPage from './pages/DashboardPage';
 import VesselCallsPage from './pages/VesselCallsPage';
@@ -39,7 +41,38 @@ import LogisticsOrdersPage from './pages/LogisticsOrdersPage';
 import CounterpartiesPage from './pages/CounterpartiesPage';
 import FlowsPage from './pages/FlowsPage';
 import CargoTrackingPage from './pages/CargoTrackingPage';
+import DirectoriesPage from './pages/DirectoriesPage';
 import { USER_ROLE_LABELS } from './utils';
+
+function NavLinkItem({
+  to,
+  icon: Icon,
+  label,
+  onClose,
+}: {
+  to: string;
+  icon: typeof LayoutDashboard;
+  label: string;
+  onClose: () => void;
+}) {
+  const { user } = useAuth();
+  if (!canAccessRoute(user?.role, to)) return null;
+
+  return (
+    <Link
+      to={to}
+      className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
+      onClick={onClose}
+    >
+      <Icon className="w-5 h-5" />
+      <span className="font-medium">{label}</span>
+    </Link>
+  );
+}
+
+function Guard({ children }: { children: React.ReactNode }) {
+  return <RoleRoute>{children}</RoleRoute>;
+}
 
 function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -67,122 +100,40 @@ function AppLayout() {
         </div>
 
         <nav className="p-4">
-          <Link
-            to="/"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="font-medium">Панель ИЛС</span>
-          </Link>
+          <NavLinkItem to="/" icon={LayoutDashboard} label="Панель ИЛС" onClose={() => setSidebarOpen(false)} />
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Управление заказами
+            Учёт грузов
           </div>
-          <Link
-            to="/logistics-orders"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <ClipboardList className="w-5 h-5" />
-            <span className="font-medium">Логистические заказы</span>
-          </Link>
-          <Link
-            to="/cargo-tracking"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <MapPinned className="w-5 h-5" />
-            <span className="font-medium">Отслеживание грузов</span>
-          </Link>
-          <Link
-            to="/flows"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <ArrowLeftRight className="w-5 h-5" />
-            <span className="font-medium">Потоки</span>
-          </Link>
+          <NavLinkItem to="/cargo-tracking" icon={MapPinned} label="Отслеживание грузов" onClose={() => setSidebarOpen(false)} />
+          <NavLinkItem to="/cargo-lots" icon={Package} label="Партии груза" onClose={() => setSidebarOpen(false)} />
+          <NavLinkItem to="/flows" icon={ArrowLeftRight} label="Потоки" onClose={() => setSidebarOpen(false)} />
+          <NavLinkItem to="/logistics-orders" icon={ClipboardList} label="Логистические заказы" onClose={() => setSidebarOpen(false)} />
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Сухопутный ввод (ЖД / авто)
+            Средства доставления
           </div>
-          <Link
-            to="/wagons"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Train className="w-5 h-5" />
-            <span className="font-medium">Железнодорожный фронт</span>
-          </Link>
-          <Link
-            to="/trucks"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Truck className="w-5 h-5" />
-            <span className="font-medium">Автотранспорт</span>
-          </Link>
+          <p className="px-4 mb-2 text-xs text-slate-600">Идентификаторы для сопоставления с грузом</p>
+          <NavLinkItem to="/wagons" icon={Train} label="Железнодорожный фронт" onClose={() => setSidebarOpen(false)} />
+          <NavLinkItem to="/trucks" icon={Truck} label="Автотранспорт" onClose={() => setSidebarOpen(false)} />
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Складской учёт
+            Склады терминала
           </div>
-          <Link
-            to="/warehouses"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Warehouse className="w-5 h-5" />
-            <span className="font-medium">Склады угля и нефти</span>
-          </Link>
-          <Link
-            to="/cargo-lots"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Package className="w-5 h-5" />
-            <span className="font-medium">Партии груза</span>
-          </Link>
+          <NavLinkItem to="/warehouses" icon={Warehouse} label="Склады угля и нефти" onClose={() => setSidebarOpen(false)} />
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Отгрузка на флот
+            Флот и причалы
           </div>
-          <Link
-            to="/vessels"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Ship className="w-5 h-5" />
-            <span className="font-medium">Суда</span>
-          </Link>
-          <Link
-            to="/vessel-calls"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Ship className="w-5 h-5" />
-            <span className="font-medium">Судозаходы</span>
-          </Link>
-          <Link
-            to="/berths"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Anchor className="w-5 h-5" />
-            <span className="font-medium">Причалы</span>
-          </Link>
+          <NavLinkItem to="/vessels" icon={Ship} label="Суда" onClose={() => setSidebarOpen(false)} />
+          <NavLinkItem to="/vessel-calls" icon={Ship} label="Судозаходы" onClose={() => setSidebarOpen(false)} />
+          <NavLinkItem to="/berths" icon={Anchor} label="Причалы" onClose={() => setSidebarOpen(false)} />
 
           <div className="mt-6 mb-2 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Справочники ИЛС
           </div>
-          <Link
-            to="/counterparties"
-            className="flex items-center gap-3 px-4 py-3 mb-1 text-slate-300 rounded-lg hover:bg-slate-800 hover:text-white transition-all"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Building2 className="w-5 h-5" />
-            <span className="font-medium">Контрагенты</span>
-          </Link>
+          <NavLinkItem to="/directories" icon={BookOpen} label="НСИ (порты, грузы)" onClose={() => setSidebarOpen(false)} />
+          <NavLinkItem to="/counterparties" icon={Building2} label="Контрагенты" onClose={() => setSidebarOpen(false)} />
 
           {isAdmin && (
             <>
@@ -202,7 +153,7 @@ function AppLayout() {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
-          <p className="text-xs text-slate-500 text-center">Информационная логистическая система v2.0</p>
+          <p className="text-xs text-slate-500 text-center">ИЛС v1.0 · прототип по ТЗ</p>
         </div>
       </aside>
 
@@ -218,6 +169,7 @@ function AppLayout() {
 
             <div className="flex-1 md:flex-none">
               <h1 className="text-xl font-semibold text-primary">ИЛС · угольно-нефтяной терминал</h1>
+              <p className="text-xs text-muted hidden sm:block">Прототип по ТЗ · объект учёта — партия груза</p>
             </div>
 
             <div className="flex items-center gap-4">
@@ -257,19 +209,20 @@ function AppLayout() {
 
         <main className="p-6 bg-gray-50 dark:bg-slate-950 min-h-[calc(100vh-73px)]">
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/vessels" element={<VesselsPage />} />
-            <Route path="/vessel-calls" element={<VesselCallsPage />} />
-            <Route path="/berths" element={<BerthsPage />} />
+            <Route path="/" element={<Guard><DashboardPage /></Guard>} />
+            <Route path="/vessels" element={<Guard><VesselsPage /></Guard>} />
+            <Route path="/vessel-calls" element={<Guard><VesselCallsPage /></Guard>} />
+            <Route path="/berths" element={<Guard><BerthsPage /></Guard>} />
             <Route path="/containers" element={<Navigate to="/cargo-lots" replace />} />
-            <Route path="/cargo-lots" element={<ContainersPage />} />
-            <Route path="/trucks" element={<TrucksPage />} />
-            <Route path="/wagons" element={<WagonsPage />} />
-            <Route path="/warehouses" element={<WarehousesPage />} />
-            <Route path="/logistics-orders" element={<LogisticsOrdersPage />} />
-            <Route path="/cargo-tracking" element={<CargoTrackingPage />} />
-            <Route path="/counterparties" element={<CounterpartiesPage />} />
-            <Route path="/flows" element={<FlowsPage />} />
+            <Route path="/cargo-lots" element={<Guard><ContainersPage /></Guard>} />
+            <Route path="/trucks" element={<Guard><TrucksPage /></Guard>} />
+            <Route path="/wagons" element={<Guard><WagonsPage /></Guard>} />
+            <Route path="/warehouses" element={<Guard><WarehousesPage /></Guard>} />
+            <Route path="/logistics-orders" element={<Guard><LogisticsOrdersPage /></Guard>} />
+            <Route path="/cargo-tracking" element={<Guard><CargoTrackingPage /></Guard>} />
+            <Route path="/counterparties" element={<Guard><CounterpartiesPage /></Guard>} />
+            <Route path="/directories" element={<Guard><DirectoriesPage /></Guard>} />
+            <Route path="/flows" element={<Guard><FlowsPage /></Guard>} />
             <Route
               path="/users"
               element={

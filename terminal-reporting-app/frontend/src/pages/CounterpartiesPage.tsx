@@ -85,7 +85,7 @@ export default function CounterpartiesPage() {
     <div>
       <PageHeader
         title="Контрагенты"
-        subtitle="Информационное обеспечение ИЛС — участники логистических цепочек"
+        subtitle="FR-16: участники логистических цепочек (клиент, перевозчик, агент, ЖД)"
         action={
           <button
             onClick={() => setShowForm(true)}

@@ -2,6 +2,7 @@ import express from 'express';
 import prisma from '../lib/prisma';
 import { logInfoFlow } from '../lib/ils';
 import { buildExportRouteStages } from '../lib/exportRouteStages';
+import { cargoStatusFromStageType } from '../lib/cargoStatusFromStage';
 
 const router = express.Router();
 
@@ -249,11 +250,16 @@ router.patch('/trackings/:trackingId/advance', async (req, res) => {
           events: {
             create: {
               fromStageId: tracking.currentStageId ?? undefined,
-              description: 'Груз доставлен по маршруту (конечная точка)',
+              description: 'Груз доставлен в конечную точку',
             },
           },
         },
         include: { container: true, currentStage: true, route: true, events: { take: 10, orderBy: { eventAt: 'desc' } } },
+      });
+
+      await prisma.container.update({
+        where: { id: tracking.containerId },
+        data: { status: 'DELIVERED' },
       });
 
       const allDelivered = await prisma.cargoTracking.count({
@@ -272,7 +278,7 @@ router.patch('/trackings/:trackingId/advance', async (req, res) => {
         entityType: 'CARGO_TRACKING',
         entityId: trackingId,
         orderId: tracking.route.orderId ?? undefined,
-        message: `Контейнер ${tracking.container.containerNumber} доставлен по маршруту ${tracking.route.routeNumber}`,
+        message: `Партия ${tracking.container.containerNumber} доставлена (${tracking.route.routeNumber})`,
       });
 
       return res.json(updated);
@@ -289,6 +295,8 @@ router.patch('/trackings/:trackingId/advance', async (req, res) => {
       where: { id: nextStage.id },
       data: { status: 'CURRENT', actualAt: newStage.actualAt ?? new Date() },
     });
+
+    const cargoStatus = cargoStatusFromStageType(nextStage.stageType);
 
     const updated = await prisma.cargoTracking.update({
       where: { id: trackingId },
@@ -312,13 +320,18 @@ router.patch('/trackings/:trackingId/advance', async (req, res) => {
       },
     });
 
+    await prisma.container.update({
+      where: { id: tracking.containerId },
+      data: { status: cargoStatus },
+    });
+
     await logInfoFlow({
       ilsFunction: 'CONTROL',
       eventType: 'STATUS_CHANGE',
       entityType: 'CARGO_TRACKING',
       entityId: trackingId,
       orderId: tracking.route.orderId ?? undefined,
-      message: `Контейнер ${tracking.container.containerNumber} на этапе «${nextStage.locationName}» (${tracking.route.routeNumber})`,
+      message: `Партия ${tracking.container.containerNumber}: ${cargoStatus} — «${nextStage.locationName}» (${tracking.route.routeNumber})`,
     });
 
     res.json(updated);

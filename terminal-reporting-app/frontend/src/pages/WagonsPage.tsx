@@ -147,8 +147,8 @@ export default function WagonsPage() {
   return (
     <div>
       <PageHeader
-        title="Учет вагонов"
-        subtitle={`Всего: ${wagons.length} вагонов`}
+        title="Железнодорожный фронт"
+        subtitle="FR-11: идентификаторы вагонов для сопоставления с партией груза"
         action={
           <button
             onClick={() => {
@@ -215,7 +215,7 @@ export default function WagonsPage() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="label-field">Контейнер</label>
+              <label className="label-field">Партия груза</label>
               <select value={form.containerId} onChange={(e) => setForm({ ...form, containerId: e.target.value })} className="input-field">
                 <option value="">Не выбран</option>
                 {containers.map((c) => (
@@ -303,7 +303,7 @@ export default function WagonsPage() {
                 )}
                 {wagon.container && (
                   <div>
-                    <p className="text-xs text-subtle">Контейнер</p>
+                    <p className="text-xs text-subtle">Партия</p>
                     <p className="font-medium">{wagon.container.containerNumber}</p>
                   </div>
                 )}

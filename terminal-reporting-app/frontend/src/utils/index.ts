@@ -221,6 +221,26 @@ export const ROUTE_STAGE_TYPE_LABELS: Record<string, string> = {
   BORDER: 'Граница',
 };
 
+/** Состояние груза по этапу маршрута (транспорт — временный носитель). */
+export function cargoStatusFromStageType(stageType: string): string {
+  switch (stageType) {
+    case 'SUPPLIER':
+    case 'RAIL_STATION':
+    case 'ROAD_GATE':
+      return 'ON_LAND';
+    case 'WAREHOUSE':
+      return 'IN_STORAGE';
+    case 'BERTH':
+      return 'LOADING_BERTH';
+    case 'SHIP':
+      return 'ON_VESSEL';
+    case 'PORT':
+      return 'AT_DESTINATION_PORT';
+    default:
+      return 'ON_LAND';
+  }
+}
+
 export const ROUTE_STAGE_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Ожидается',
   CURRENT: 'Текущий этап',
@@ -240,7 +260,7 @@ export const TRANSPORT_MODE_LABELS: Record<string, string> = {
   SEA: 'Морской',
   RAIL: 'Железнодорожный',
   ROAD: 'Автомобильный',
-  WAREHOUSE: 'Складской',
+  WAREHOUSE: 'Хранение на складе',
 };
 
 export const USER_ROLE_LABELS: Record<string, string> = {
